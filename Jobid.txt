@@ -1,0 +1,498 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
+local LocalPlayer = Players.LocalPlayer
+
+--- Cores no estilo DeepSeek ---
+local DEEPSEEK_BLUE = Color3.fromRGB(0, 120, 215)
+local DEEPSEEK_DARK = Color3.fromRGB(25, 30, 40)
+local DEEPSEEK_GRAY = Color3.fromRGB(45, 50, 60)
+local DEEPSEEK_LIGHT = Color3.fromRGB(240, 245, 250)
+
+--- Cria a interface principal ---
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DeepSeekJobIDUI"
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+--- BOTÃO DO JOBID (AJUSTÁVEL E ESTILIZADO) ---
+local jobIdButton = Instance.new("TextButton")
+jobIdButton.Name = "CopyJobIDButton"
+jobIdButton.Size = UDim2.new(0, 160, 0, 45) -- Tamanho fixo
+jobIdButton.Position = UDim2.new(0.5, -80, 0.1, 0)
+jobIdButton.AnchorPoint = Vector2.new(0.5, 0)
+jobIdButton.BackgroundColor3 = DEEPSEEK_BLUE
+jobIdButton.TextColor3 = DEEPSEEK_LIGHT
+jobIdButton.Font = Enum.Font.SourceSansBold
+jobIdButton.TextSize = 14
+jobIdButton.AutoButtonColor = false
+jobIdButton.Text = "JobID: " .. game.JobId
+jobIdButton.Parent = ScreenGui
+
+-- Bordas arredondadas
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 8)
+buttonCorner.Parent = jobIdButton
+
+-- Efeito de hover (aumenta levemente e muda cor)
+jobIdButton.MouseEnter:Connect(function()
+    TweenService:Create(jobIdButton, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(0, 140, 255),
+        Size = UDim2.new(0, 165, 0, 48)
+    }):Play()
+end)
+
+jobIdButton.MouseLeave:Connect(function()
+    TweenService:Create(jobIdButton, TweenInfo.new(0.2), {
+        BackgroundColor3 = DEEPSEEK_BLUE,
+        Size = UDim2.new(0, 160, 0, 45)
+    }):Play()
+end)
+
+--- FUNÇÃO PARA GARANTIR QUE O TEXTO CAIBA NO BOTÃO ---
+local function adjustTextToFit(button)
+    local maxWidth = button.AbsoluteSize.X - 20 -- Margem de segurança
+    local text = button.Text
+    local textSize = TextService:GetTextSize(text, button.TextSize, button.Font, Vector2.new(10000, 10000))
+
+    -- Se o texto for muito grande, reduz o TextSize
+    while textSize.X > maxWidth and button.TextSize > 10 do
+        button.TextSize = button.TextSize - 1
+        textSize = TextService:GetTextSize(text, button.TextSize, button.Font, Vector2.new(10000, 10000))
+    end
+end
+
+-- Ajusta o texto quando o botão é criado
+adjustTextToFit(jobIdButton)
+
+--- FRAME DE TELEPORTE (ESTILO DEEPSEEK) ---
+local teleportFrame = Instance.new("Frame")
+teleportFrame.Name = "TeleportFrame"
+teleportFrame.Size = UDim2.new(0, 280, 0, 180)
+teleportFrame.Position = UDim2.new(0.5, -140, 0.3, 0)
+teleportFrame.AnchorPoint = Vector2.new(0.5, 0)
+teleportFrame.BackgroundColor3 = DEEPSEEK_DARK
+teleportFrame.BorderSizePixel = 0
+teleportFrame.Visible = false
+teleportFrame.Parent = ScreenGui
+
+-- Bordas arredondadas
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 8)
+frameCorner.Parent = teleportFrame
+
+-- Sombra suave
+local shadow = Instance.new("ImageLabel")
+shadow.Name = "Shadow"
+shadow.Size = UDim2.new(1, 10, 1, 10)
+shadow.Position = UDim2.new(0, -5, 0, -5)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.8
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+shadow.Parent = teleportFrame
+
+-- Cabeçalho (arrastável)
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 35)
+header.BackgroundColor3 = DEEPSEEK_BLUE
+header.BorderSizePixel = 0
+header.Parent = teleportFrame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 8)
+headerCorner.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, -40, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "TELEPORTAR PARA SERVIDOR"
+title.TextColor3 = DEEPSEEK_LIGHT
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 16
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+-- Botão de fechar (X estilizado)
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 2)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+closeButton.TextColor3 = DEEPSEEK_LIGHT
+closeButton.Text = "×"
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 20
+closeButton.AutoButtonColor = false
+closeButton.Parent = header
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+-- Campo de input (TextBox moderno)
+local inputFrame = Instance.new("Frame")
+inputFrame.Name = "InputFrame"
+inputFrame.Size = UDim2.new(0.85, 0, 0, 40)
+inputFrame.Position = UDim2.new(0.075, 0, 0.3, 0)
+inputFrame.BackgroundColor3 = DEEPSEEK_GRAY
+inputFrame.Parent = teleportFrame
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 6)
+inputCorner.Parent = inputFrame
+
+local jobIdInput = Instance.new("TextBox")
+jobIdInput.Name = "JobIDInput"
+jobIdInput.Size = UDim2.new(1, -10, 1, -10)
+jobIdInput.Position = UDim2.new(0, 5, 0, 5)
+jobIdInput.BackgroundTransparency = 1
+jobIdInput.TextColor3 = DEEPSEEK_LIGHT
+jobIdInput.PlaceholderText = "Digite o JobID aqui..."
+jobIdInput.PlaceholderColor3 = Color3.fromRGB(150, 160, 180)
+jobIdInput.Font = Enum.Font.SourceSans
+jobIdInput.TextSize = 14
+jobIdInput.ClearTextOnFocus = false
+jobIdInput.Parent = inputFrame
+
+-- Botão de teleportar (estilo DeepSeek)
+local teleportButton = Instance.new("TextButton")
+teleportButton.Name = "TeleportButton"
+teleportButton.Size = UDim2.new(0.85, 0, 0, 40)
+teleportButton.Position = UDim2.new(0.075, 0, 0.65, 0)
+teleportButton.BackgroundColor3 = DEEPSEEK_BLUE
+teleportButton.TextColor3 = DEEPSEEK_LIGHT
+teleportButton.Text = "TELEPORTAR"
+teleportButton.Font = Enum.Font.SourceSansBold
+teleportButton.TextSize = 14
+teleportButton.AutoButtonColor = false
+teleportButton.Parent = teleportFrame
+
+local teleportCorner = Instance.new("UICorner")
+teleportCorner.CornerRadius = UDim.new(0, 6)
+teleportCorner.Parent = teleportButton
+
+-- Efeito hover no botão de teleportar
+teleportButton.MouseEnter:Connect(function()
+    TweenService:Create(teleportButton, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(0, 140, 255),
+        Size = UDim2.new(0.85, 5, 0, 42)
+    }):Play()
+end)
+
+teleportButton.MouseLeave:Connect(function()
+    TweenService:Create(teleportButton, TweenInfo.new(0.2), {
+        BackgroundColor3 = DEEPSEEK_BLUE,
+        Size = UDim2.new(0.85, 0, 0, 40)
+    }):Play()
+end)
+
+--- FUNÇÕES PRINCIPAIS ---
+-- Copia JobID para a área de transferência
+local function copyJobID()
+    if setclipboard then
+        setclipboard(game.JobId)
+        local originalText = jobIdButton.Text
+        jobIdButton.Text = "Copiado!"
+        task.wait(1.5)
+        jobIdButton.Text = originalText
+    else
+        jobIdButton.Text = "Erro ao copiar!"
+        task.wait(1.5)
+        jobIdButton.Text = "JobID: " .. game.JobId
+    end
+end
+
+-- Teleporta para o JobID inserido
+local function teleportToJobID()
+    local targetJobId = jobIdInput.Text
+    if targetJobId and #targetJobId > 0 then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, targetJobId, LocalPlayer)
+    else
+        local originalPlaceholder = jobIdInput.PlaceholderText
+        jobIdInput.PlaceholderText = "JobID inválido!"
+        task.wait(1.5)
+        jobIdInput.PlaceholderText = originalPlaceholder
+    end
+end
+
+--- INTERAÇÕES ---
+jobIdButton.MouseButton1Click:Connect(copyJobID)
+jobIdButton.MouseButton2Click:Connect(function()
+    teleportFrame.Visible = not teleportFrame.Visible
+end)
+
+teleportButton.MouseButton1Click:Connect(teleportToJobID)
+closeButton.MouseButton1Click:Connect(function()
+    teleportFrame.Visible = false
+end)
+
+--- SISTEMA DE ARRASTAR (BOTÃO E FRAME) ---
+local function makeDraggable(gui, dragHandle)
+    dragHandle = dragHandle or gui
+    local dragging = false
+    local dragStart, startPos
+
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = gui.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            local delta = input.Position - dragStart
+            gui.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+makeDraggable(jobIdButton)
+makeDraggable(teleportFrame, header)
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+
+--- Cria a interface principal ---
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DeepSeekJobIDUI"
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+--- ESTILO DEEPSEEK (CORES E EFEITOS) ---
+local DEEPSEEK_BLUE = Color3.fromRGB(0, 120, 215)
+local DEEPSEEK_DARK = Color3.fromRGB(25, 30, 40)
+local DEEPSEEK_GRAY = Color3.fromRGB(45, 50, 60)
+local DEEPSEEK_LIGHT = Color3.fromRGB(240, 245, 250)
+
+--- BOTÃO MÓVEL DO JOBID (ESTILO DEEPSEEK) ---
+local jobIdButton = Instance.new("TextButton")
+jobIdButton.Name = "CopyJobIDButton"
+jobIdButton.Size = UDim2.new(0, 160, 0, 45)
+jobIdButton.Position = UDim2.new(0.5, -80, 0.1, 0)
+jobIdButton.AnchorPoint = Vector2.new(0.5, 0)
+jobIdButton.BackgroundColor3 = DEEPSEEK_BLUE
+jobIdButton.TextColor3 = DEEPSEEK_LIGHT
+jobIdButton.Text = "JobID: " .. game.JobId
+jobIdButton.Font = Enum.Font.SourceSansBold
+jobIdButton.TextSize = 14
+jobIdButton.AutoButtonColor = false
+jobIdButton.Parent = workspace
+
+-- Efeito de hover no botão
+jobIdButton.MouseEnter:Connect(function()
+    TweenService:Create(jobIdButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 140, 255)}):Play()
+end)
+jobIdButton.MouseLeave:Connect(function()
+    TweenService:Create(jobIdButton, TweenInfo.new(0.2), {BackgroundColor3 = DEEPSEEK_BLUE}):Play()
+end)
+
+--- FRAME DE TELEPORTE (ESTILO MODERNO) ---
+local teleportFrame = Instance.new("Frame")
+teleportFrame.Name = "TeleportFrame"
+teleportFrame.Size = UDim2.new(0, 280, 0, 180)
+teleportFrame.Position = UDim2.new(0.5, -140, 0.3, 0)
+teleportFrame.AnchorPoint = Vector2.new(0.5, 0)
+teleportFrame.BackgroundColor3 = DEEPSEEK_DARK
+teleportFrame.BorderSizePixel = 0
+teleportFrame.ClipsDescendants = true
+teleportFrame.Parent = ScreenGui
+
+-- Borda arredondada
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = teleportFrame
+
+-- Sombra elegante
+local shadow = Instance.new("ImageLabel")
+shadow.Name = "Shadow"
+shadow.Size = UDim2.new(1, 10, 1, 10)
+shadow.Position = UDim2.new(0, -5, 0, -5)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.8
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+shadow.Parent = teleportFrame
+
+-- Cabeçalho do frame
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 35)
+header.BackgroundColor3 = DEEPSEEK_BLUE
+header.BorderSizePixel = 0
+header.Parent = teleportFrame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 8)
+headerCorner.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, -40, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "TELEPORTAR PARA SERVIDOR"
+title.TextColor3 = DEEPSEEK_LIGHT
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 16
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+-- Botão de fechar (X)
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 2)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+closeButton.TextColor3 = DEEPSEEK_LIGHT
+closeButton.Text = "×"
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 20
+closeButton.AutoButtonColor = false
+closeButton.Parent = header
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+-- Campo de input (TextBox)
+local inputFrame = Instance.new("Frame")
+inputFrame.Name = "InputFrame"
+inputFrame.Size = UDim2.new(0.85, 0, 0, 40)
+inputFrame.Position = UDim2.new(0.075, 0, 0.3, 0)
+inputFrame.BackgroundColor3 = DEEPSEEK_GRAY
+inputFrame.Parent = teleportFrame
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 6)
+inputCorner.Parent = inputFrame
+
+local jobIdInput = Instance.new("TextBox")
+jobIdInput.Name = "JobIDInput"
+jobIdInput.Size = UDim2.new(1, -10, 1, -10)
+jobIdInput.Position = UDim2.new(0, 5, 0, 5)
+jobIdInput.BackgroundTransparency = 1
+jobIdInput.TextColor3 = DEEPSEEK_LIGHT
+jobIdInput.PlaceholderText = "Digite o JobID aqui..."
+jobIdInput.PlaceholderColor3 = Color3.fromRGB(150, 160, 180)
+jobIdInput.Font = Enum.Font.SourceSans
+jobIdInput.TextSize = 14
+jobIdInput.ClearTextOnFocus = false
+jobIdInput.Parent = inputFrame
+
+-- Botão de teleportar
+local teleportButton = Instance.new("TextButton")
+teleportButton.Name = "TeleportButton"
+teleportButton.Size = UDim2.new(0.85, 0, 0, 40)
+teleportButton.Position = UDim2.new(0.075, 0, 0.65, 0)
+teleportButton.BackgroundColor3 = DEEPSEEK_BLUE
+teleportButton.TextColor3 = DEEPSEEK_LIGHT
+teleportButton.Text = "TELEPORTAR"
+teleportButton.Font = Enum.Font.SourceSansBold
+teleportButton.TextSize = 14
+teleportButton.AutoButtonColor = false
+teleportButton.Parent = teleportFrame
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 6)
+buttonCorner.Parent = teleportButton
+
+-- Efeito de hover no botão de teleportar
+teleportButton.MouseEnter:Connect(function()
+    TweenService:Create(teleportButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 140, 255)}):Play()
+end)
+teleportButton.MouseLeave:Connect(function()
+    TweenService:Create(teleportButton, TweenInfo.new(0.2), {BackgroundColor3 = DEEPSEEK_BLUE}):Play()
+end)
+
+--- FUNÇÕES PRINCIPAIS ---
+-- Copia JobID para a área de transferência
+local function copyJobID()
+    if setclipboard then
+        setclipboard(game.JobId)
+        jobIdButton.Text = "Copiado!"
+        task.wait(1.5)
+        jobIdButton.Text = "JobID: " .. game.JobId
+    else
+        jobIdButton.Text = "Erro ao copiar!"
+        task.wait(1.5)
+        jobIdButton.Text = "JobID: " .. game.JobId
+    end
+end
+
+-- Teleporta para o JobID inserido
+local function teleportToJobID()
+    local targetJobId = jobIdInput.Text
+    if targetJobId and #targetJobId > 0 then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, targetJobId, LocalPlayer)
+    else
+        local originalText = jobIdInput.PlaceholderText
+        jobIdInput.PlaceholderText = "JobID inválido!"
+        task.wait(1.5)
+        jobIdInput.PlaceholderText = originalText
+    end
+end
+
+--- INTERAÇÕES ---
+jobIdButton.MouseButton1Click:Connect(copyJobID)
+teleportButton.MouseButton1Click:Connect(teleportToJobID)
+closeButton.MouseButton1Click:Connect(function()
+    teleportFrame.Visible = false
+end)
+
+--- SISTEMA DE ARRASTAR (BOTÃO E FRAME) ---
+local function makeDraggable(gui, dragHandle)
+    dragHandle = dragHandle or gui
+    local dragging = false
+    local dragStart, startPos
+
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = gui.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            local delta = input.Position - dragStart
+            gui.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+makeDraggable(jobIdButton)
+makeDraggable(teleportFrame, header)
