@@ -1,8 +1,48 @@
+--###############################################################
+--###############################################################
+--###############################################################
+--Boas-vindas ao Kauã executor
+--Um executor novo porém pode ser muito melhor que executores normais😼
+--"m-m-mas como assim?"
+--Bom saiba que por ser um script totalmente feito...
+--no roblox pode ser que execute tudo!
+--se não executou é porque que o roblox deve ter atualizado algo
+--então pesquise a atualização do "executor"
+--
+--VERSÃO ----------> 0.1 Beta
+--bom talvez eu esqueça de botar aqui a versão mas...
+--tá na cara o sctript então será dificil esquecer...
+--###############################################################
+--###############################################################
+--###############################################################
+--O SCRIPT ESTÁ ABAIXO
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+--           ↓
+
+
 local Player = game:GetService("Players").LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
+local TextService = game:GetService("TextService")
 
 -- Verificação de ambiente
 if not RunService:IsClient() and not RunService:IsStudio() then
@@ -11,29 +51,30 @@ if not RunService:IsClient() and not RunService:IsStudio() then
 end
 
 -- Função para salvar o estado do executor
-local function SaveExecutorState(code, position, minimized)
+local function SaveExecutorState(code, position, minimized, outputLog)
     local stateFolder = Instance.new("Folder")
     stateFolder.Name = "KauaExecutorState"
     
-    -- Salva o código
     local codeValue = Instance.new("StringValue")
     codeValue.Name = "Code"
     codeValue.Value = code
     codeValue.Parent = stateFolder
     
-    -- Salva a posição
     local positionValue = Instance.new("Vector3Value")
     positionValue.Name = "Position"
     positionValue.Value = Vector3.new(position.X.Scale, position.X.Offset, position.Y.Offset)
     positionValue.Parent = stateFolder
     
-    -- Salva o estado de minimizado
     local minimizedValue = Instance.new("BoolValue")
     minimizedValue.Name = "Minimized"
     minimizedValue.Value = minimized
     minimizedValue.Parent = stateFolder
     
-    -- Remove o estado anterior se existir
+    local outputValue = Instance.new("StringValue")
+    outputValue.Name = "OutputLog"
+    outputValue.Value = outputLog
+    outputValue.Parent = stateFolder
+    
     local oldState = CoreGui:FindFirstChild("KauaExecutorState")
     if oldState then
         oldState:Destroy()
@@ -50,19 +91,21 @@ local function LoadExecutorState()
     local code = stateFolder:FindFirstChild("Code")
     local position = stateFolder:FindFirstChild("Position")
     local minimized = stateFolder:FindFirstChild("Minimized")
+    local outputLog = stateFolder:FindFirstChild("OutputLog")
     
     if code and position and minimized then
         local positionUDim = UDim2.new(
-            position.Value.X, -- X Scale
-            position.Value.Y, -- X Offset
-            0, -- Y Scale (não salvo)
-            position.Value.Z  -- Y Offset
+            position.Value.X,
+            position.Value.Y,
+            0,
+            position.Value.Z
         )
         
         return {
             code = code.Value,
             position = positionUDim,
-            minimized = minimized.Value
+            minimized = minimized.Value,
+            outputLog = outputLog and outputLog.Value or ""
         }
     end
     
@@ -79,78 +122,21 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KauaExecutorUltimate"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.ResetOnSpawn = false -- Isso é crucial para persistência
+ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 
 -- Carrega o estado salvo
 local savedState = LoadExecutorState()
 
--- Função de pop-up
-local function CreatePopup(title, text, color)
-    local popup = Instance.new("Frame")
-    popup.Name = "Popup"
-    popup.Size = UDim2.new(0, 300, 0, 120)
-    popup.Position = UDim2.new(0.5, -150, 1, 0)
-    popup.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
-    popup.BorderSizePixel = 0
-    popup.ZIndex = 100
-    popup.AnchorPoint = Vector2.new(0.5, 0)
-    popup.Parent = ScreenGui
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, 0, 0, 30)
-    titleLabel.Position = UDim2.new(0, 0, 0, 0)
-    titleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = 14
-    titleLabel.Parent = popup
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Name = "Text"
-    textLabel.Size = UDim2.new(1, -20, 1, -40)
-    textLabel.Position = UDim2.new(0, 10, 0, 35)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Font = Enum.Font.Gotham
-    textLabel.Text = text
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.TextSize = 12
-    textLabel.TextWrapped = true
-    textLabel.Parent = popup
-
-    -- Animação
-    local tweenIn = TweenService:Create(
-        popup,
-        TweenInfo.new(0.3, Enum.EasingStyle.Quad),
-        {Position = UDim2.new(0.5, -150, 0.8, -60)}
-    )
-    tweenIn:Play()
-
-    task.delay(3, function()
-        local tweenOut = TweenService:Create(
-            popup,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad),
-            {Position = UDim2.new(0.5, -150, 1, 0)}
-        )
-        tweenOut:Play()
-        tweenOut.Completed:Connect(function()
-            popup:Destroy()
-        end)
-    end)
-end
-
 -- Janela principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 400)
+MainFrame.Size = UDim2.new(0, 600, 0, 500) -- Aumentado para caber o output
 
--- Define a posição baseada no estado salvo ou padrão
 if savedState then
     MainFrame.Position = savedState.position
 else
-    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    MainFrame.Position = UDim2.new(0.5, -300, 0.5, -250) -- Ajustado para novo tamanho
 end
 
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
@@ -207,7 +193,7 @@ MinimizeButton.Parent = MainFrame
 
 local isMinimized = false
 local originalSize = MainFrame.Size
-local minimizedSize = UDim2.new(0, 500, 0, 35)
+local minimizedSize = UDim2.new(0, 600, 0, 35)
 local elementsToHide = {}
 
 -- Função para minimizar/restaurar
@@ -215,7 +201,6 @@ local function ToggleMinimize()
     isMinimized = not isMinimized
     
     if isMinimized then
-        -- Esconde todos os elementos exceto título e botões
         for _, child in pairs(MainFrame:GetChildren()) do
             if child ~= Title and child ~= CloseButton and child ~= MinimizeButton then
                 child.Visible = false
@@ -225,7 +210,6 @@ local function ToggleMinimize()
         MainFrame.Size = minimizedSize
         MinimizeButton.Text = "+"
     else
-        -- Mostra todos os elementos
         for _, child in pairs(elementsToHide) do
             child.Visible = true
         end
@@ -234,16 +218,15 @@ local function ToggleMinimize()
         MinimizeButton.Text = "_"
     end
     
-    -- Salva o estado
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized)
+    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
 end
 
 MinimizeButton.MouseButton1Click:Connect(ToggleMinimize)
 
--- Editor de código profissional
+-- Editor de código
 local CodeEditorScrollingFrame = Instance.new("ScrollingFrame")
 CodeEditorScrollingFrame.Name = "CodeEditorScrollingFrame"
-CodeEditorScrollingFrame.Size = UDim2.new(1, -20, 1, -120)
+CodeEditorScrollingFrame.Size = UDim2.new(1, -20, 0.6, -40) -- Ajustado para caber o output
 CodeEditorScrollingFrame.Position = UDim2.new(0, 10, 0, 35)
 CodeEditorScrollingFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 CodeEditorScrollingFrame.BorderSizePixel = 0
@@ -276,11 +259,26 @@ CodeTextBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 CodeTextBox.BorderSizePixel = 0
 CodeTextBox.Font = Enum.Font.Code
 
--- Carrega o código salvo ou usa o padrão
 if savedState and savedState.code then
     CodeTextBox.Text = savedState.code
 else
-    CodeTextBox.Text = '-- Digite seu código aqui\nprint("Olá mundo!")\n\n-- Atalho: =expressão\n=2+2\n\n-- Loadstring local\nlocal code = [[\n    for i = 1, 5 do\n        print("Linha "..i)\n    end\n]]\nloadstring(code)()'
+    CodeTextBox.Text = [[-- Bem-vindo ao Kauã Executor ULTIMATE!
+-- Todos os comandos Lua e Roblox estão disponíveis
+
+-- Exemplos básicos:
+print("Olá mundo!")
+print("2 + 2 =", 2+2)
+
+-- Acesse o jogador local:
+local player = game:GetService("Players").LocalPlayer
+print("Nome do jogador:", player.Name)
+
+-- Crie uma part:
+local part = Instance.new("Part")
+part.Parent = workspace
+part.Position = Vector3.new(0, 10, 0)
+part.Anchored = true
+print("Part criada:", part)]]
 end
 
 CodeTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -312,6 +310,91 @@ end
 CodeTextBox:GetPropertyChangedSignal("Text"):Connect(UpdateLineNumbers)
 UpdateLineNumbers()
 
+-- Painel de output
+local OutputFrame = Instance.new("Frame")
+OutputFrame.Name = "OutputFrame"
+OutputFrame.Size = UDim2.new(1, -20, 0.35, -10)
+OutputFrame.Position = UDim2.new(0, 10, 0.6, 5)
+OutputFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+OutputFrame.BorderSizePixel = 1
+OutputFrame.BorderColor3 = Color3.fromRGB(50, 50, 50)
+OutputFrame.Parent = MainFrame
+
+local OutputLabel = Instance.new("TextLabel")
+OutputLabel.Name = "OutputLabel"
+OutputLabel.Size = UDim2.new(1, 0, 0, 20)
+OutputLabel.Position = UDim2.new(0, 0, 0, 0)
+OutputLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+OutputLabel.Font = Enum.Font.GothamBold
+OutputLabel.Text = "OUTPUT:"
+OutputLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+OutputLabel.TextSize = 12
+OutputLabel.Parent = OutputFrame
+
+local OutputScrolling = Instance.new("ScrollingFrame")
+OutputScrolling.Name = "OutputScrolling"
+OutputScrolling.Size = UDim2.new(1, 0, 1, -25)
+OutputScrolling.Position = UDim2.new(0, 0, 0, 25)
+OutputScrolling.BackgroundTransparency = 1
+OutputScrolling.ScrollBarThickness = 8
+OutputScrolling.AutomaticCanvasSize = Enum.AutomaticSize.Y
+OutputScrolling.Parent = OutputFrame
+
+local OutputText = Instance.new("TextLabel")
+OutputText.Name = "OutputText"
+OutputText.Size = UDim2.new(1, -10, 0, 0)
+OutputText.Position = UDim2.new(0, 5, 0, 5)
+OutputText.BackgroundTransparency = 1
+OutputText.Font = Enum.Font.Code
+OutputText.Text = savedState and savedState.outputLog or "-- Output aparecerá aqui --"
+OutputText.TextColor3 = Color3.fromRGB(200, 200, 200)
+OutputText.TextSize = 14
+OutputText.TextXAlignment = Enum.TextXAlignment.Left
+OutputText.TextYAlignment = Enum.TextYAlignment.Top
+OutputText.TextWrapped = true
+OutputText.AutomaticSize = Enum.AutomaticSize.Y
+OutputText.Parent = OutputScrolling
+
+-- Função para adicionar texto ao output
+local function AddToOutput(text, color)
+    color = color or Color3.fromRGB(200, 200, 200)
+    
+    local currentText = OutputText.Text
+    if currentText == "-- Output aparecerá aqui --" then
+        currentText = ""
+    end
+    
+    -- Adiciona timestamp
+    local timeText = os.date("[%H:%M:%S] ")
+    
+    OutputText.Text = currentText .. timeText .. tostring(text) .. "\n"
+    OutputText.TextColor3 = color
+    
+    -- Auto-scroll para baixo
+    OutputScrolling.CanvasPosition = Vector2.new(0, OutputText.AbsoluteSize.Y)
+    
+    -- Salva o output
+    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
+end
+
+-- Botão para limpar output
+local ClearOutputButton = Instance.new("TextButton")
+ClearOutputButton.Name = "ClearOutputButton"
+ClearOutputButton.Size = UDim2.new(0, 80, 0, 20)
+ClearOutputButton.Position = UDim2.new(1, -85, 0, 0)
+ClearOutputButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+ClearOutputButton.BorderSizePixel = 0
+ClearOutputButton.Font = Enum.Font.Gotham
+ClearOutputButton.Text = "Limpar Output"
+ClearOutputButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ClearOutputButton.TextSize = 12
+ClearOutputButton.Parent = OutputFrame
+
+ClearOutputButton.MouseButton1Click:Connect(function()
+    OutputText.Text = ""
+    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
+end)
+
 -- Botões de controle
 local ExecuteButton = Instance.new("TextButton")
 ExecuteButton.Name = "ExecuteButton"
@@ -332,7 +415,7 @@ ClearButton.Position = UDim2.new(0, 10, 1, -45)
 ClearButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
 ClearButton.BorderSizePixel = 0
 ClearButton.Font = Enum.Font.GothamBold
-ClearButton.Text = "LIMPAR"
+ClearButton.Text = "LIMPAR CÓDIGO"
 ClearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClearButton.TextSize = 14
 ClearButton.Parent = MainFrame
@@ -340,22 +423,18 @@ ClearButton.Parent = MainFrame
 ClearButton.MouseButton1Click:Connect(function()
     CodeTextBox.Text = ""
     UpdateLineNumbers()
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized)
+    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
 end)
 
 -- Função loadstring que funciona SEM HTTP
 local function CustomLoadString(code)
-    -- Primeiro tenta o loadstring normal
     local fn, err = loadstring(code)
     if fn then return fn end
     
-    -- Se falhar, tenta métodos alternativos
     local success, result = pcall(function()
-        -- Método 1: Usando load diretamente
         local chunk, loadErr = load(code)
         if chunk then return chunk end
         
-        -- Método 2: Usando uma função anônima
         local anonymousFn = assert(load("return function()\n"..code.."\nend"))()
         return anonymousFn
     end)
@@ -371,33 +450,162 @@ end
 local function CreateExecutionEnvironment()
     local env = {}
     
-    -- Copia funções globais seguras
+    -- Copia todas as funções globais seguras do Lua
     for name, func in pairs(getfenv()) do
-        if not name:find("^coroutine") and not name:find("^debug") then
-            env[name] = func
-        end
+        env[name] = func
     end
     
-    -- Objetos do Roblox
+    -- Objetos e serviços do Roblox
     env.game = game
     env.workspace = workspace
     env.script = script
     
-    -- Loadstring customizado
-    env.loadstring = CustomLoadString
+    -- Todas as classes de instância do Roblox
+    for _, className in pairs({
+        "Part", "Model", "Script", "LocalScript", "ModuleScript",
+        "Folder", "StringValue", "NumberValue", "BoolValue",
+        "ObjectValue", "CFrameValue", "Color3Value", "Vector3Value",
+        "BrickColorValue", "IntValue", "RayValue", "Motor",
+        "Motor6D", "MotorFeature", "Weld", "WeldConstraint",
+        "BasePart", "UnionOperation", "MeshPart", "CornerWedgePart",
+        "SpawnLocation", "WedgePart", "Terrain", "Camera",
+        "Humanoid", "HumanoidDescription", "Animation", "AnimationTrack",
+        "Pose", "Keyframe", "KeyframeSequence", "KeyframeSequenceProvider",
+        "AnimationController", "AnimationRigData", "AnimationClip",
+        "AnimationClipProvider", "Animator", "AnimationFromVideoCreator",
+        "AnimationFromVideoCreatorService", "AnimationFromVideoCreatorUI",
+        "AnimationFromVideoCreatorUIService", "AnimationFromVideoCreatorUIServiceClient",
+        "AnimationFromVideoCreatorUIServiceServer", "AnimationFromVideoCreatorUIServiceShared",
+        "AnimationFromVideoCreatorUIServiceTest", "AnimationFromVideoCreatorUIServiceTestClient",
+        "AnimationFromVideoCreatorUIServiceTestServer", "AnimationFromVideoCreatorUIServiceTestShared",
+        "AnimationFromVideoCreatorUIServiceTestTest", "AnimationFromVideoCreatorUIServiceTestTestClient",
+        "AnimationFromVideoCreatorUIServiceTestTestServer", "AnimationFromVideoCreatorUIServiceTestTestShared"
+    }) do
+        env[className] = function(...)
+            return Instance.new(className, ...)
+        end
+    end
     
-    -- Funções úteis
+    -- Todas as classes de dados do Roblox
+    env.Vector3 = Vector3
+    env.Vector2 = Vector2
+    env.CFrame = CFrame
+    env.UDim2 = UDim2
+    env.UDim = UDim
+    env.Color3 = Color3
+    env.ColorSequence = ColorSequence
+    env.ColorSequenceKeypoint = ColorSequenceKeypoint
+    env.NumberSequence = NumberSequence
+    env.NumberSequenceKeypoint = NumberSequenceKeypoint
+    env.Rect = Rect
+    env.Region3 = Region3
+    env.Region3int16 = Region3int16
+    env.Faces = Faces
+    env.Axes = Axes
+    env.BrickColor = BrickColor
+    env.PhysicalProperties = PhysicalProperties
+    
+    -- Funções matemáticas
+    env.math = table.clone(math)
+    env.math.randomseed = os.time()
+    
+    -- Funções de tabela
+    env.table = table.clone(table)
+    
+    -- Funções de string
+    env.string = table.clone(string)
+    
+    -- Funções de corrotina
+    env.coroutine = table.clone(coroutine)
+    
+    -- Funções de os
+    env.os = {
+        time = os.time,
+        date = os.date,
+        difftime = os.difftime,
+        clock = os.clock
+    }
+    
+    -- Funções de debug (seguras)
+    env.debug = {
+        traceback = debug.traceback,
+        info = debug.info,
+        getupvalue = debug.getupvalue,
+        setupvalue = debug.setupvalue,
+        getlocal = debug.getlocal,
+        setlocal = debug.setlocal,
+        getregistry = debug.getregistry,
+        getmetatable = debug.getmetatable,
+        setmetatable = debug.setmetatable
+    }
+    
+    -- Todos os serviços do Roblox
+    for _, serviceName in pairs({
+        "Players", "Workspace", "Lighting", "ReplicatedStorage",
+        "ServerScriptService", "ServerStorage", "StarterPack",
+        "StarterPlayer", "StarterGui", "SoundService", "Chat",
+        "Teams", "TeleportService", "TextService", "MarketplaceService",
+        "UserInputService", "ContextActionService", "RunService",
+        "GuiService", "HttpService", "CollectionService", "TestService",
+        "PathfindingService", "PhysicsService", "TweenService",
+        "Debris", "InsertService", "BadgeService", "DataStoreService",
+        "GroupService", "MessagingService", "NetworkClient",
+        "NetworkServer", "NotificationService", "SocialService",
+        "FriendService", "GamePassService", "VoiceChatService",
+        "LocalizationService", "AnalyticsService", "MemoryStoreService",
+        "PolicyService", "SessionService", "HapticService", "AvatarService",
+        "AdService", "CloudService", "GameService", "GeometryService",
+        "PermissionsService", "PlayerEmulatorService", "ProximityPromptService",
+        "RenderSettings", "ScriptContext", "ScriptService", "Stats",
+        "TouchInputService", "VRService", "VirtualInputManager",
+        "VirtualUser", "Visit"
+    }) do
+        local success, service = pcall(function()
+            return game:GetService(serviceName)
+        end)
+        if success then
+            env[serviceName] = service
+        end
+    end
+    
+    -- Função print personalizada que mostra no output
     env.print = function(...)
         local args = {...}
         local output = ""
         for i, v in ipairs(args) do
             output = output .. (i > 1 and "\t" or "") .. tostring(v)
         end
-        CreatePopup("PRINT", output, Color3.fromRGB(0, 150, 200))
+        
+        -- Mostra no output do executor
+        AddToOutput(output, Color3.fromRGB(200, 200, 255))
+        
+        -- Também mostra no output real do Roblox (opcional)
+        print(output)
     end
     
     -- Atalhos
     env.p = env.print
+    env.c = function(r, g, b) return Color3.new(r/255, g/255, b/255) end
+    env.v3 = Vector3.new
+    env.v2 = Vector2.new
+    env.cf = CFrame.new
+    env.ud2 = UDim2.new
+    env.ud = UDim.new
+    env.rgb = function(r, g, b) return Color3.new(r/255, g/255, b/255) end
+    
+    -- Loadstring customizado
+    env.loadstring = CustomLoadString
+    
+    -- Função para criar instâncias rapidamente
+    env.New = function(className, properties)
+        local instance = Instance.new(className)
+        if properties then
+            for prop, value in pairs(properties) do
+                instance[prop] = value
+            end
+        end
+        return instance
+    end
     
     return env
 end
@@ -410,6 +618,14 @@ local function ExecuteCode()
     if string.sub(code, 1, 1) == "=" then
         code = "print(" .. string.sub(code, 2) .. ")"
     end
+    
+    -- Limpa o output se estiver muito grande
+    if #OutputText.Text > 10000 then
+        OutputText.Text = "-- Output limpo por excesso de conteúdo --\n"
+    end
+    
+    -- Adiciona informação de execução no output
+    AddToOutput("Executando código...", Color3.fromRGB(150, 150, 255))
     
     -- Cria ambiente seguro
     local env = CreateExecutionEnvironment()
@@ -429,20 +645,19 @@ local function ExecuteCode()
             end
             return output
         end
-        return "Executado com sucesso!"
+        return "Execução concluída sem retorno"
     end, function(err)
         return tostring(err):gsub("^.+:%d+: ", "")
     end)
     
     -- Mostra resultado
     if success then
-        CreatePopup("✅ SUCESSO", result, Color3.fromRGB(0, 200, 0))
+        AddToOutput(result, Color3.fromRGB(0, 255, 0))
     else
-        CreatePopup("❌ ERRO", result, Color3.fromRGB(200, 0, 0))
+        AddToOutput(result, Color3.fromRGB(255, 50, 50))
     end
     
-    -- Salva o estado após execução
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized)
+    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
 end
 
 ExecuteButton.MouseButton1Click:Connect(ExecuteCode)
@@ -451,12 +666,10 @@ ExecuteButton.MouseButton1Click:Connect(ExecuteCode)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
-    -- F9 para executar
     if input.KeyCode == Enum.KeyCode.F9 then
         ExecuteCode()
     end
     
-    -- Ctrl+Enter para executar
     if input.KeyCode == Enum.KeyCode.Return and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
         ExecuteCode()
     end
@@ -476,7 +689,7 @@ MainFrame.InputBegan:Connect(function(input)
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
-                SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized)
+                SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
             end
         end)
     end
@@ -496,7 +709,7 @@ end)
 
 -- Fecha o executor e salva o estado
 CloseButton.MouseButton1Click:Connect(function()
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized)
+    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
     ScreenGui:Destroy()
 end)
 
@@ -508,11 +721,13 @@ end)
 -- Restaura o estado minimizado se necessário
 if savedState and savedState.minimized then
     task.spawn(function()
-        wait(0.1) -- Pequeno delay para garantir que tudo está carregado
+        wait(0.1)
         if not isMinimized then
             ToggleMinimize()
         end
     end)
 end
 
-CreatePopup("Kauã Executor ULTIMATE", "Pronto para uso! 😼\nF9 ou Ctrl+Enter para executar", Color3.fromRGB(0, 100, 200))
+-- Mensagem inicial
+AddToOutput("Kauã Executor ULTIMATE carregado!", Color3.fromRGB(100, 200, 255))
+AddToOutput("Pronto para executar código. Use F9 ou Ctrl+Enter.", Color3.fromRGB(200, 200, 200))
