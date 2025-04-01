@@ -128,15 +128,70 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 -- Carrega o estado salvo
 local savedState = LoadExecutorState()
 
+-- Função de pop-up
+local function CreatePopup(title, text, color)
+    local popup = Instance.new("Frame")
+    popup.Name = "Popup"
+    popup.Size = UDim2.new(0, 300, 0, 120)
+    popup.Position = UDim2.new(0.5, -150, 1, 0)
+    popup.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
+    popup.BorderSizePixel = 0
+    popup.ZIndex = 100
+    popup.AnchorPoint = Vector2.new(0.5, 0)
+    popup.Parent = ScreenGui
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "Title"
+    titleLabel.Size = UDim2.new(1, 0, 0, 30)
+    titleLabel.Position = UDim2.new(0, 0, 0, 0)
+    titleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextSize = 14
+    titleLabel.Parent = popup
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = "Text"
+    textLabel.Size = UDim2.new(1, -20, 1, -40)
+    textLabel.Position = UDim2.new(0, 10, 0, 35)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Font = Enum.Font.Gotham
+    textLabel.Text = text
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextSize = 12
+    textLabel.TextWrapped = true
+    textLabel.Parent = popup
+
+    local tweenIn = TweenService:Create(
+        popup,
+        TweenInfo.new(0.3, Enum.EasingStyle.Quad),
+        {Position = UDim2.new(0.5, -150, 0.8, -60)}
+    )
+    tweenIn:Play()
+
+    task.delay(3, function()
+        local tweenOut = TweenService:Create(
+            popup,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad),
+            {Position = UDim2.new(0.5, -150, 1, 0)}
+        )
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function()
+            popup:Destroy()
+        end)
+    end)
+end
+
 -- Janela principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 600, 0, 500) -- Aumentado para caber o output
+MainFrame.Size = UDim2.new(0, 600, 0, 500)
 
 if savedState then
     MainFrame.Position = savedState.position
 else
-    MainFrame.Position = UDim2.new(0.5, -300, 0.5, -250) -- Ajustado para novo tamanho
+    MainFrame.Position = UDim2.new(0.5, -300, 0.5, -250)
 end
 
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
@@ -226,7 +281,7 @@ MinimizeButton.MouseButton1Click:Connect(ToggleMinimize)
 -- Editor de código
 local CodeEditorScrollingFrame = Instance.new("ScrollingFrame")
 CodeEditorScrollingFrame.Name = "CodeEditorScrollingFrame"
-CodeEditorScrollingFrame.Size = UDim2.new(1, -20, 0.6, -40) -- Ajustado para caber o output
+CodeEditorScrollingFrame.Size = UDim2.new(1, -20, 0.6, -40)
 CodeEditorScrollingFrame.Position = UDim2.new(0, 10, 0, 35)
 CodeEditorScrollingFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 CodeEditorScrollingFrame.BorderSizePixel = 0
@@ -370,10 +425,11 @@ local function AddToOutput(text, color)
     OutputText.Text = currentText .. timeText .. tostring(text) .. "\n"
     OutputText.TextColor3 = color
     
-    -- Auto-scroll para baixo
-    OutputScrolling.CanvasPosition = Vector2.new(0, OutputText.AbsoluteSize.Y)
+    -- Auto-scroll para baixo apenas se o usuário não estiver rolando manualmente
+    if not OutputScrolling.UserInputState == Enum.UserInputState.Begin then
+        OutputScrolling.CanvasPosition = Vector2.new(0, OutputText.AbsoluteSize.Y)
+    end
     
-    -- Salva o output
     SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
 end
 
@@ -393,6 +449,69 @@ ClearOutputButton.Parent = OutputFrame
 ClearOutputButton.MouseButton1Click:Connect(function()
     OutputText.Text = ""
     SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
+end)
+
+-- Botões de scripts prontos
+local ScriptButtonsFrame = Instance.new("Frame")
+ScriptButtonsFrame.Name = "ScriptButtonsFrame"
+ScriptButtonsFrame.Size = UDim2.new(1, -20, 0, 30)
+ScriptButtonsFrame.Position = UDim2.new(0, 10, 0.6, -35)
+ScriptButtonsFrame.BackgroundTransparency = 1
+ScriptButtonsFrame.Parent = MainFrame
+
+-- Botão 1: Infinite Yield
+local InfiniteYieldButton = Instance.new("TextButton")
+InfiniteYieldButton.Name = "InfiniteYieldButton"
+InfiniteYieldButton.Size = UDim2.new(0.32, 0, 1, 0)
+InfiniteYieldButton.Position = UDim2.new(0, 0, 0, 0)
+InfiniteYieldButton.BackgroundColor3 = Color3.fromRGB(50, 100, 150)
+InfiniteYieldButton.BorderSizePixel = 0
+InfiniteYieldButton.Font = Enum.Font.Gotham
+InfiniteYieldButton.Text = "Infinite Yield"
+InfiniteYieldButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfiniteYieldButton.TextSize = 12
+InfiniteYieldButton.Parent = ScriptButtonsFrame
+
+-- Botão 2: Scripts Centrais
+local ScriptsCentraisButton = Instance.new("TextButton")
+ScriptsCentraisButton.Name = "ScriptsCentraisButton"
+ScriptsCentraisButton.Size = UDim2.new(0.32, 0, 1, 0)
+ScriptsCentraisButton.Position = UDim2.new(0.34, 0, 0, 0)
+ScriptsCentraisButton.BackgroundColor3 = Color3.fromRGB(150, 50, 100)
+ScriptsCentraisButton.BorderSizePixel = 0
+ScriptsCentraisButton.Font = Enum.Font.Gotham
+ScriptsCentraisButton.Text = "Scripts Centrais"
+ScriptsCentraisButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ScriptsCentraisButton.TextSize = 12
+ScriptsCentraisButton.Parent = ScriptButtonsFrame
+
+-- Botão 3: BlackKing
+local BlackKingButton = Instance.new("TextButton")
+BlackKingButton.Name = "BlackKingButton"
+BlackKingButton.Size = UDim2.new(0.32, 0, 1, 0)
+BlackKingButton.Position = UDim2.new(0.68, 0, 0, 0)
+BlackKingButton.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
+BlackKingButton.BorderSizePixel = 0
+BlackKingButton.Font = Enum.Font.Gotham
+BlackKingButton.Text = "BlackKing"
+BlackKingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+BlackKingButton.TextSize = 12
+BlackKingButton.Parent = ScriptButtonsFrame
+
+-- Funções para os botões de scripts
+InfiniteYieldButton.MouseButton1Click:Connect(function()
+    CodeTextBox.Text = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()'
+    CreatePopup("Script Carregado", "Infinite Yield pronto para executar!", Color3.fromRGB(0, 150, 200))
+end)
+
+ScriptsCentraisButton.MouseButton1Click:Connect(function()
+    CodeTextBox.Text = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/Untitled-2.lua"))()'
+    CreatePopup("Script Carregado", "Scripts Centrais pronto para executar!", Color3.fromRGB(150, 0, 100))
+end)
+
+BlackKingButton.MouseButton1Click:Connect(function()
+    CodeTextBox.Text = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub"))()'
+    CreatePopup("Script Carregado", "BlackKing pronto para executar!", Color3.fromRGB(100, 0, 150))
 end)
 
 -- Botões de controle
@@ -446,21 +565,159 @@ local function CustomLoadString(code)
     end
 end
 
--- Ambiente de execução completo
+-- Ambiente de execução completo com TODOS os comandos Lua
 local function CreateExecutionEnvironment()
     local env = {}
     
-    -- Copia todas as funções globais seguras do Lua
-    for name, func in pairs(getfenv()) do
-        env[name] = func
+    -- 1. Funções Básicas
+    env.assert = assert
+    env.collectgarbage = collectgarbage
+    env.dofile = dofile
+    env.error = error
+    env.getfenv = getfenv
+    env.getmetatable = getmetatable
+    env.ipairs = ipairs
+    env.load = load
+    env.loadfile = loadfile
+    env.loadstring = loadstring
+    env.module = module
+    env.next = next
+    env.pairs = pairs
+    env.pcall = pcall
+    env.print = function(...)
+        local args = {...}
+        local output = ""
+        for i, v in ipairs(args) do
+            output = output .. (i > 1 and "\t" or "") .. tostring(v)
+        end
+        AddToOutput(output, Color3.fromRGB(200, 200, 255))
     end
-    
-    -- Objetos e serviços do Roblox
+    env.rawequal = rawequal
+    env.rawget = rawget
+    env.rawset = rawset
+    env.require = require
+    env.select = select
+    env.setfenv = setfenv
+    env.setmetatable = setmetatable
+    env.tonumber = tonumber
+    env.tostring = tostring
+    env.type = type
+    env.unpack = unpack
+    env.xpcall = xpcall
+
+    -- 2. Biblioteca Coroutine
+    env.coroutine = {
+        create = coroutine.create,
+        resume = coroutine.resume,
+        running = coroutine.running,
+        status = coroutine.status,
+        wrap = coroutine.wrap,
+        yield = coroutine.yield
+    }
+
+    -- 3. Biblioteca String
+    env.string = {
+        byte = string.byte,
+        char = string.char,
+        dump = string.dump,
+        find = string.find,
+        format = string.format,
+        gmatch = string.gmatch,
+        gsub = string.gsub,
+        len = string.len,
+        lower = string.lower,
+        match = string.match,
+        rep = string.rep,
+        reverse = string.reverse,
+        sub = string.sub,
+        upper = string.upper
+    }
+
+    -- 4. Biblioteca Table
+    env.table = {
+        concat = table.concat,
+        insert = table.insert,
+        maxn = table.maxn,
+        remove = table.remove,
+        sort = table.sort,
+        unpack = table.unpack
+    }
+
+    -- 5. Biblioteca Math
+    env.math = {
+        abs = math.abs,
+        acos = math.acos,
+        asin = math.asin,
+        atan = math.atan,
+        atan2 = math.atan2,
+        ceil = math.ceil,
+        cos = math.cos,
+        cosh = math.cosh,
+        deg = math.deg,
+        exp = math.exp,
+        floor = math.floor,
+        fmod = math.fmod,
+        frexp = math.frexp,
+        huge = math.huge,
+        ldexp = math.ldexp,
+        log = math.log,
+        log10 = math.log10,
+        max = math.max,
+        min = math.min,
+        modf = math.modf,
+        pi = math.pi,
+        pow = math.pow,
+        rad = math.rad,
+        random = math.random,
+        randomseed = math.randomseed,
+        sin = math.sin,
+        sinh = math.sinh,
+        sqrt = math.sqrt,
+        tan = math.tan,
+        tanh = math.tanh
+    }
+
+    -- 6. Biblioteca OS
+    env.os = {
+        clock = os.clock,
+        date = os.date,
+        difftime = os.difftime,
+        execute = os.execute,
+        exit = os.exit,
+        getenv = os.getenv,
+        remove = os.remove,
+        rename = os.rename,
+        setlocale = os.setlocale,
+        time = os.time,
+        tmpname = os.tmpname
+    }
+
+    -- 7. Biblioteca Debug
+    env.debug = {
+        debug = debug.debug,
+        getfenv = debug.getfenv,
+        gethook = debug.gethook,
+        getinfo = debug.getinfo,
+        getlocal = debug.getlocal,
+        getmetatable = debug.getmetatable,
+        getregistry = debug.getregistry,
+        getupvalue = debug.getupvalue,
+        setfenv = debug.setfenv,
+        sethook = debug.sethook,
+        setlocal = debug.setlocal,
+        setmetatable = debug.setmetatable,
+        setupvalue = debug.setupvalue,
+        traceback = debug.traceback
+    }
+
+    -- 8. Objetos Globais do Roblox
     env.game = game
     env.workspace = workspace
     env.script = script
-    
-    -- Todas as classes de instância do Roblox
+    env.shared = shared
+    env.plugin = plugin
+
+    -- 9. Todas as classes de instância
     for _, className in pairs({
         "Part", "Model", "Script", "LocalScript", "ModuleScript",
         "Folder", "StringValue", "NumberValue", "BoolValue",
@@ -485,8 +742,8 @@ local function CreateExecutionEnvironment()
             return Instance.new(className, ...)
         end
     end
-    
-    -- Todas as classes de dados do Roblox
+
+    -- 10. Todas as classes de dados
     env.Vector3 = Vector3
     env.Vector2 = Vector2
     env.CFrame = CFrame
@@ -504,42 +761,8 @@ local function CreateExecutionEnvironment()
     env.Axes = Axes
     env.BrickColor = BrickColor
     env.PhysicalProperties = PhysicalProperties
-    
-    -- Funções matemáticas
-    env.math = table.clone(math)
-    env.math.randomseed = os.time()
-    
-    -- Funções de tabela
-    env.table = table.clone(table)
-    
-    -- Funções de string
-    env.string = table.clone(string)
-    
-    -- Funções de corrotina
-    env.coroutine = table.clone(coroutine)
-    
-    -- Funções de os
-    env.os = {
-        time = os.time,
-        date = os.date,
-        difftime = os.difftime,
-        clock = os.clock
-    }
-    
-    -- Funções de debug (seguras)
-    env.debug = {
-        traceback = debug.traceback,
-        info = debug.info,
-        getupvalue = debug.getupvalue,
-        setupvalue = debug.setupvalue,
-        getlocal = debug.getlocal,
-        setlocal = debug.setlocal,
-        getregistry = debug.getregistry,
-        getmetatable = debug.getmetatable,
-        setmetatable = debug.setmetatable
-    }
-    
-    -- Todos os serviços do Roblox
+
+    -- 11. Todos os serviços
     for _, serviceName in pairs({
         "Players", "Workspace", "Lighting", "ReplicatedStorage",
         "ServerScriptService", "ServerStorage", "StarterPack",
@@ -567,36 +790,17 @@ local function CreateExecutionEnvironment()
             env[serviceName] = service
         end
     end
-    
-    -- Função print personalizada que mostra no output
-    env.print = function(...)
-        local args = {...}
-        local output = ""
-        for i, v in ipairs(args) do
-            output = output .. (i > 1 and "\t" or "") .. tostring(v)
-        end
-        
-        -- Mostra no output do executor
-        AddToOutput(output, Color3.fromRGB(200, 200, 255))
-        
-        -- Também mostra no output real do Roblox (opcional)
-        print(output)
-    end
-    
-    -- Atalhos
-    env.p = env.print
-    env.c = function(r, g, b) return Color3.new(r/255, g/255, b/255) end
-    env.v3 = Vector3.new
-    env.v2 = Vector2.new
-    env.cf = CFrame.new
-    env.ud2 = UDim2.new
-    env.ud = UDim.new
-    env.rgb = function(r, g, b) return Color3.new(r/255, g/255, b/255) end
-    
-    -- Loadstring customizado
+
+    -- 12. Funções úteis personalizadas
+    env.p = env.print -- Atalho para print
+    env.wait = task.wait
+    env.delay = task.delay
+    env.spawn = task.spawn
+
+    -- 13. Loadstring customizado
     env.loadstring = CustomLoadString
-    
-    -- Função para criar instâncias rapidamente
+
+    -- 14. Função para criar instâncias rapidamente
     env.New = function(className, properties)
         local instance = Instance.new(className)
         if properties then
@@ -606,7 +810,7 @@ local function CreateExecutionEnvironment()
         end
         return instance
     end
-    
+
     return env
 end
 
@@ -618,14 +822,6 @@ local function ExecuteCode()
     if string.sub(code, 1, 1) == "=" then
         code = "print(" .. string.sub(code, 2) .. ")"
     end
-    
-    -- Limpa o output se estiver muito grande
-    if #OutputText.Text > 10000 then
-        OutputText.Text = "-- Output limpo por excesso de conteúdo --\n"
-    end
-    
-    -- Adiciona informação de execução no output
-    AddToOutput("Executando código...", Color3.fromRGB(150, 150, 255))
     
     -- Cria ambiente seguro
     local env = CreateExecutionEnvironment()
@@ -645,7 +841,7 @@ local function ExecuteCode()
             end
             return output
         end
-        return "Execução concluída sem retorno"
+        return "Executado com sucesso!"
     end, function(err)
         return tostring(err):gsub("^.+:%d+: ", "")
     end)
@@ -728,6 +924,5 @@ if savedState and savedState.minimized then
     end)
 end
 
--- Mensagem inicial
 AddToOutput("Kauã Executor ULTIMATE carregado!", Color3.fromRGB(100, 200, 255))
 AddToOutput("Pronto para executar código. Use F9 ou Ctrl+Enter.", Color3.fromRGB(200, 200, 200))
