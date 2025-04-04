@@ -9,7 +9,7 @@
 --se não executou é porque que o roblox deve ter atualizado algo
 --então pesquise a atualização do "executor"
 --
---VERSÃO ----------> 0.1 Beta
+--VERSÃO ----------> V2
 --bom talvez eu esqueça de botar aqui a versão mas...
 --tá na cara o sctript então será dificil esquecer...
 --###############################################################
@@ -37,340 +37,171 @@
 --           ↓
 
 
-local Player = game:GetService("Players").LocalPlayer
+-- Serviços essenciais
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
+local StarterGui = game:GetService("StarterGui")
 local TextService = game:GetService("TextService")
 
--- Verificação de ambiente
-if not RunService:IsClient() and not RunService:IsStudio() then
-    warn("Executor só funciona no cliente!")
-    return
+-- Espera o jogo carregar e o jogador entrar
+if not game:IsLoaded() then game.Loaded:Wait() end
+local Player = Players.LocalPlayer or Players.PlayerAdded:Wait()
+
+-- Remove GUI antiga se existir
+if Player:FindFirstChild("PlayerGui") and Player.PlayerGui:FindFirstChild("KauaExecutorUltimate") then
+    Player.PlayerGui.KauaExecutorUltimate:Destroy()
 end
 
--- Função para salvar o estado do executor
-local function SaveExecutorState(code, position, minimized, outputLog)
-    local stateFolder = Instance.new("Folder")
-    stateFolder.Name = "KauaExecutorState"
-    
-    local codeValue = Instance.new("StringValue")
-    codeValue.Name = "Code"
-    codeValue.Value = code
-    codeValue.Parent = stateFolder
-    
-    local positionValue = Instance.new("Vector3Value")
-    positionValue.Name = "Position"
-    positionValue.Value = Vector3.new(position.X.Scale, position.X.Offset, position.Y.Offset)
-    positionValue.Parent = stateFolder
-    
-    local minimizedValue = Instance.new("BoolValue")
-    minimizedValue.Name = "Minimized"
-    minimizedValue.Value = minimized
-    minimizedValue.Parent = stateFolder
-    
-    local outputValue = Instance.new("StringValue")
-    outputValue.Name = "OutputLog"
-    outputValue.Value = outputLog
-    outputValue.Parent = stateFolder
-    
-    local oldState = CoreGui:FindFirstChild("KauaExecutorState")
-    if oldState then
-        oldState:Destroy()
-    end
-    
-    stateFolder.Parent = CoreGui
-end
-
--- Função para carregar o estado do executor
-local function LoadExecutorState()
-    local stateFolder = CoreGui:FindFirstChild("KauaExecutorState")
-    if not stateFolder then return nil end
-    
-    local code = stateFolder:FindFirstChild("Code")
-    local position = stateFolder:FindFirstChild("Position")
-    local minimized = stateFolder:FindFirstChild("Minimized")
-    local outputLog = stateFolder:FindFirstChild("OutputLog")
-    
-    if code and position and minimized then
-        local positionUDim = UDim2.new(
-            position.Value.X,
-            position.Value.Y,
-            0,
-            position.Value.Z
-        )
-        
-        return {
-            code = code.Value,
-            position = positionUDim,
-            minimized = minimized.Value,
-            outputLog = outputLog and outputLog.Value or ""
-        }
-    end
-    
-    return nil
-end
-
--- Remove GUIs antigas
-local existingGui = Player.PlayerGui:FindFirstChild("KauaExecutorUltimate")
-if existingGui then
-    existingGui:Destroy()
-end
-
--- Cria a GUI
+-- Cria a interface principal
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KauaExecutorUltimate"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = Player:WaitForChild("PlayerGui")
-
--- Carrega o estado salvo
-local savedState = LoadExecutorState()
-
--- Função de pop-up
-local function CreatePopup(title, text, color)
-    local popup = Instance.new("Frame")
-    popup.Name = "Popup"
-    popup.Size = UDim2.new(0, 300, 0, 120)
-    popup.Position = UDim2.new(0.5, -150, 1, 0)
-    popup.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
-    popup.BorderSizePixel = 0
-    popup.ZIndex = 100
-    popup.AnchorPoint = Vector2.new(0.5, 0)
-    popup.Parent = ScreenGui
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, 0, 0, 30)
-    titleLabel.Position = UDim2.new(0, 0, 0, 0)
-    titleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = 14
-    titleLabel.Parent = popup
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Name = "Text"
-    textLabel.Size = UDim2.new(1, -20, 1, -40)
-    textLabel.Position = UDim2.new(0, 10, 0, 35)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Font = Enum.Font.Gotham
-    textLabel.Text = text
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.TextSize = 12
-    textLabel.TextWrapped = true
-    textLabel.Parent = popup
-
-    local tweenIn = TweenService:Create(
-        popup,
-        TweenInfo.new(0.3, Enum.EasingStyle.Quad),
-        {Position = UDim2.new(0.5, -150, 0.8, -60)}
-    )
-    tweenIn:Play()
-
-    task.delay(3, function()
-        local tweenOut = TweenService:Create(
-            popup,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad),
-            {Position = UDim2.new(0.5, -150, 1, 0)}
-        )
-        tweenOut:Play()
-        tweenOut.Completed:Connect(function()
-            popup:Destroy()
-        end)
-    end)
-end
 
 -- Janela principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 600, 0, 500)
-
-if savedState then
-    MainFrame.Position = savedState.position
-else
-    MainFrame.Position = UDim2.new(0.5, -300, 0.5, -250)
-end
-
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Position = UDim2.new(0.5, -300, 0.5, -250)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderColor3 = Color3.fromRGB(50, 50, 50)
 MainFrame.BorderSizePixel = 1
 MainFrame.Active = true
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
--- Título com animação RGB
+-- Barra de título com arrasto
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 30)
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+
+-- Sistema de arrasto
+local dragging, dragInput, dragStart, startPos
+local function UpdateInput(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TitleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        UpdateInput(input)
+    end
+end)
+
+-- Título com efeito RGB
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(0, 200, 0, 25)
-Title.Position = UDim2.new(0, 10, 0, 5)
+Title.Size = UDim2.new(0, 200, 1, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "Kauã Executor ULTIMATE"
+Title.Text = "Kauã Executor"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = MainFrame
+Title.Parent = TitleBar
 
-local hue = 0
-RunService.Heartbeat:Connect(function(deltaTime)
-    hue = (hue + deltaTime * 0.5) % 1
-    Title.TextColor3 = Color3.fromHSV(hue, 0.8, 1)
-end)
+-- Efeito RGB no título
+coroutine.wrap(function()
+    local hue = 0
+    while Title and Title.Parent do
+        hue = (hue + 0.01) % 1
+        Title.TextColor3 = Color3.fromHSV(hue, 1, 1)
+        task.wait(0.05)
+    end
+end)()
+
+-- Botão de minimizar/restaurar
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -60, 0, 0)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MinimizeButton.BorderSizePixel = 0
+MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.Text = "_"
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextSize = 14
+MinimizeButton.Parent = TitleBar
 
 -- Botão de fechar
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(1, -30, 0, 5)
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -30, 0, 0)
 CloseButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
 CloseButton.BorderSizePixel = 0
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.Text = "X"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.TextSize = 14
-CloseButton.Parent = MainFrame
+CloseButton.Parent = TitleBar
 
--- Botão de minimizar/restaurar
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -60, 0, 5)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.Text = "_"
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.TextSize = 14
-MinimizeButton.Parent = MainFrame
+-- Editor de código com scroll
+local CodeFrame = Instance.new("Frame")
+CodeFrame.Name = "CodeFrame"
+CodeFrame.Size = UDim2.new(1, -10, 0.7, -40)
+CodeFrame.Position = UDim2.new(0, 5, 0, 35)
+CodeFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+CodeFrame.BorderSizePixel = 0
+CodeFrame.Parent = MainFrame
 
-local isMinimized = false
-local originalSize = MainFrame.Size
-local minimizedSize = UDim2.new(0, 600, 0, 35)
-local elementsToHide = {}
+local ScrollingFrame = Instance.new("ScrollingFrame")
+ScrollingFrame.Name = "ScrollingFrame"
+ScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
+ScrollingFrame.BackgroundTransparency = 1
+ScrollingFrame.BorderSizePixel = 0
+ScrollingFrame.ScrollBarThickness = 8
+ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+ScrollingFrame.Parent = CodeFrame
 
--- Função para minimizar/restaurar
-local function ToggleMinimize()
-    isMinimized = not isMinimized
-    
-    if isMinimized then
-        for _, child in pairs(MainFrame:GetChildren()) do
-            if child ~= Title and child ~= CloseButton and child ~= MinimizeButton then
-                child.Visible = false
-                table.insert(elementsToHide, child)
-            end
-        end
-        MainFrame.Size = minimizedSize
-        MinimizeButton.Text = "+"
-    else
-        for _, child in pairs(elementsToHide) do
-            child.Visible = true
-        end
-        elementsToHide = {}
-        MainFrame.Size = originalSize
-        MinimizeButton.Text = "_"
-    end
-    
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
-end
-
-MinimizeButton.MouseButton1Click:Connect(ToggleMinimize)
-
--- Editor de código
-local CodeEditorScrollingFrame = Instance.new("ScrollingFrame")
-CodeEditorScrollingFrame.Name = "CodeEditorScrollingFrame"
-CodeEditorScrollingFrame.Size = UDim2.new(1, -20, 0.6, -40)
-CodeEditorScrollingFrame.Position = UDim2.new(0, 10, 0, 35)
-CodeEditorScrollingFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-CodeEditorScrollingFrame.BorderSizePixel = 0
-CodeEditorScrollingFrame.ScrollBarThickness = 8
-CodeEditorScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-CodeEditorScrollingFrame.Parent = MainFrame
-
--- Números de linha
-local LineNumbers = Instance.new("TextLabel")
-LineNumbers.Name = "LineNumbers"
-LineNumbers.Size = UDim2.new(0, 40, 1, 0)
-LineNumbers.Position = UDim2.new(0, 0, 0, 0)
-LineNumbers.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-LineNumbers.BorderSizePixel = 0
-LineNumbers.Font = Enum.Font.Code
-LineNumbers.Text = "1"
-LineNumbers.TextColor3 = Color3.fromRGB(120, 120, 120)
-LineNumbers.TextSize = 14
-LineNumbers.TextXAlignment = Enum.TextXAlignment.Right
-LineNumbers.TextYAlignment = Enum.TextYAlignment.Top
-LineNumbers.AutomaticSize = Enum.AutomaticSize.Y
-LineNumbers.Parent = CodeEditorScrollingFrame
-
--- Área de código
 local CodeTextBox = Instance.new("TextBox")
 CodeTextBox.Name = "CodeTextBox"
-CodeTextBox.Size = UDim2.new(1, -45, 1, 0)
-CodeTextBox.Position = UDim2.new(0, 45, 0, 0)
-CodeTextBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+CodeTextBox.Size = UDim2.new(1, -5, 0, 0)
+CodeTextBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 CodeTextBox.BorderSizePixel = 0
 CodeTextBox.Font = Enum.Font.Code
-
-if savedState and savedState.code then
-    CodeTextBox.Text = savedState.code
-else
-    CodeTextBox.Text = [[-- Bem-vindo ao Kauã Executor ULTIMATE!
--- Todos os comandos Lua e Roblox estão disponíveis
-
--- Exemplos básicos:
+CodeTextBox.Text = [[-- Exemplo de código
 print("Olá mundo!")
-print("2 + 2 =", 2+2)
-
--- Acesse o jogador local:
-local player = game:GetService("Players").LocalPlayer
-print("Nome do jogador:", player.Name)
-
--- Crie uma part:
-local part = Instance.new("Part")
-part.Parent = workspace
-part.Position = Vector3.new(0, 10, 0)
-part.Anchored = true
-print("Part criada:", part)]]
-end
-
+]]
 CodeTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 CodeTextBox.TextSize = 14
 CodeTextBox.TextXAlignment = Enum.TextXAlignment.Left
 CodeTextBox.TextYAlignment = Enum.TextYAlignment.Top
 CodeTextBox.MultiLine = true
-CodeTextBox.TextWrapped = false
 CodeTextBox.ClearTextOnFocus = false
 CodeTextBox.AutomaticSize = Enum.AutomaticSize.Y
-CodeTextBox.Parent = CodeEditorScrollingFrame
+CodeTextBox.Parent = ScrollingFrame
 
--- Atualizar números de linha
-local function UpdateLineNumbers()
-    local lineCount = 1
-    for _ in string.gmatch(CodeTextBox.Text, "\n") do
-        lineCount = lineCount + 1
-    end
-    
-    local numbers = ""
-    for i = 1, lineCount do
-        numbers = numbers .. i .. "\n"
-    end
-    
-    LineNumbers.Text = numbers
-    CodeEditorScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, CodeTextBox.TextBounds.Y)
-end
-
-CodeTextBox:GetPropertyChangedSignal("Text"):Connect(UpdateLineNumbers)
-UpdateLineNumbers()
-
--- Painel de output
+-- Área de output
 local OutputFrame = Instance.new("Frame")
 OutputFrame.Name = "OutputFrame"
-OutputFrame.Size = UDim2.new(1, -20, 0.35, -10)
-OutputFrame.Position = UDim2.new(0, 10, 0.6, 5)
-OutputFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+OutputFrame.Size = UDim2.new(1, -10, 0.3, -10)
+OutputFrame.Position = UDim2.new(0, 5, 0.7, 5)
+OutputFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 OutputFrame.BorderSizePixel = 1
 OutputFrame.BorderColor3 = Color3.fromRGB(50, 50, 50)
 OutputFrame.Parent = MainFrame
@@ -378,7 +209,6 @@ OutputFrame.Parent = MainFrame
 local OutputLabel = Instance.new("TextLabel")
 OutputLabel.Name = "OutputLabel"
 OutputLabel.Size = UDim2.new(1, 0, 0, 20)
-OutputLabel.Position = UDim2.new(0, 0, 0, 0)
 OutputLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 OutputLabel.Font = Enum.Font.GothamBold
 OutputLabel.Text = "OUTPUT:"
@@ -388,8 +218,8 @@ OutputLabel.Parent = OutputFrame
 
 local OutputScrolling = Instance.new("ScrollingFrame")
 OutputScrolling.Name = "OutputScrolling"
-OutputScrolling.Size = UDim2.new(1, 0, 1, -25)
-OutputScrolling.Position = UDim2.new(0, 0, 0, 25)
+OutputScrolling.Size = UDim2.new(1, -5, 1, -25)
+OutputScrolling.Position = UDim2.new(0, 5, 0, 25)
 OutputScrolling.BackgroundTransparency = 1
 OutputScrolling.ScrollBarThickness = 8
 OutputScrolling.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -397,11 +227,10 @@ OutputScrolling.Parent = OutputFrame
 
 local OutputText = Instance.new("TextLabel")
 OutputText.Name = "OutputText"
-OutputText.Size = UDim2.new(1, -10, 0, 0)
-OutputText.Position = UDim2.new(0, 5, 0, 5)
+OutputText.Size = UDim2.new(1, 0, 0, 0)
 OutputText.BackgroundTransparency = 1
 OutputText.Font = Enum.Font.Code
-OutputText.Text = savedState and savedState.outputLog or "-- Output aparecerá aqui --"
+OutputText.Text = "-- Output aparecerá aqui --"
 OutputText.TextColor3 = Color3.fromRGB(200, 200, 200)
 OutputText.TextSize = 14
 OutputText.TextXAlignment = Enum.TextXAlignment.Left
@@ -410,115 +239,11 @@ OutputText.TextWrapped = true
 OutputText.AutomaticSize = Enum.AutomaticSize.Y
 OutputText.Parent = OutputScrolling
 
--- Função para adicionar texto ao output
-local function AddToOutput(text, color)
-    color = color or Color3.fromRGB(200, 200, 200)
-    
-    local currentText = OutputText.Text
-    if currentText == "-- Output aparecerá aqui --" then
-        currentText = ""
-    end
-    
-    -- Adiciona timestamp
-    local timeText = os.date("[%H:%M:%S] ")
-    
-    OutputText.Text = currentText .. timeText .. tostring(text) .. "\n"
-    OutputText.TextColor3 = color
-    
-    -- Auto-scroll para baixo apenas se o usuário não estiver rolando manualmente
-    if not OutputScrolling.UserInputState == Enum.UserInputState.Begin then
-        OutputScrolling.CanvasPosition = Vector2.new(0, OutputText.AbsoluteSize.Y)
-    end
-    
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
-end
-
--- Botão para limpar output
-local ClearOutputButton = Instance.new("TextButton")
-ClearOutputButton.Name = "ClearOutputButton"
-ClearOutputButton.Size = UDim2.new(0, 80, 0, 20)
-ClearOutputButton.Position = UDim2.new(1, -85, 0, 0)
-ClearOutputButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-ClearOutputButton.BorderSizePixel = 0
-ClearOutputButton.Font = Enum.Font.Gotham
-ClearOutputButton.Text = "Limpar Output"
-ClearOutputButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ClearOutputButton.TextSize = 12
-ClearOutputButton.Parent = OutputFrame
-
-ClearOutputButton.MouseButton1Click:Connect(function()
-    OutputText.Text = ""
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
-end)
-
--- Botões de scripts prontos
-local ScriptButtonsFrame = Instance.new("Frame")
-ScriptButtonsFrame.Name = "ScriptButtonsFrame"
-ScriptButtonsFrame.Size = UDim2.new(1, -20, 0, 30)
-ScriptButtonsFrame.Position = UDim2.new(0, 10, 0.6, -35)
-ScriptButtonsFrame.BackgroundTransparency = 1
-ScriptButtonsFrame.Parent = MainFrame
-
--- Botão 1: Infinite Yield
-local InfiniteYieldButton = Instance.new("TextButton")
-InfiniteYieldButton.Name = "InfiniteYieldButton"
-InfiniteYieldButton.Size = UDim2.new(0.32, 0, 1, 0)
-InfiniteYieldButton.Position = UDim2.new(0, 0, 0, 0)
-InfiniteYieldButton.BackgroundColor3 = Color3.fromRGB(50, 100, 150)
-InfiniteYieldButton.BorderSizePixel = 0
-InfiniteYieldButton.Font = Enum.Font.Gotham
-InfiniteYieldButton.Text = "Infinite Yield"
-InfiniteYieldButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-InfiniteYieldButton.TextSize = 12
-InfiniteYieldButton.Parent = ScriptButtonsFrame
-
--- Botão 2: Scripts Centrais
-local ScriptsCentraisButton = Instance.new("TextButton")
-ScriptsCentraisButton.Name = "ScriptsCentraisButton"
-ScriptsCentraisButton.Size = UDim2.new(0.32, 0, 1, 0)
-ScriptsCentraisButton.Position = UDim2.new(0.34, 0, 0, 0)
-ScriptsCentraisButton.BackgroundColor3 = Color3.fromRGB(150, 50, 100)
-ScriptsCentraisButton.BorderSizePixel = 0
-ScriptsCentraisButton.Font = Enum.Font.Gotham
-ScriptsCentraisButton.Text = "Scripts Centrais"
-ScriptsCentraisButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ScriptsCentraisButton.TextSize = 12
-ScriptsCentraisButton.Parent = ScriptButtonsFrame
-
--- Botão 3: BlackKing
-local BlackKingButton = Instance.new("TextButton")
-BlackKingButton.Name = "BlackKingButton"
-BlackKingButton.Size = UDim2.new(0.32, 0, 1, 0)
-BlackKingButton.Position = UDim2.new(0.68, 0, 0, 0)
-BlackKingButton.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
-BlackKingButton.BorderSizePixel = 0
-BlackKingButton.Font = Enum.Font.Gotham
-BlackKingButton.Text = "BlackKing"
-BlackKingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-BlackKingButton.TextSize = 12
-BlackKingButton.Parent = ScriptButtonsFrame
-
--- Funções para os botões de scripts
-InfiniteYieldButton.MouseButton1Click:Connect(function()
-    CodeTextBox.Text = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()'
-    CreatePopup("Script Carregado", "Infinite Yield pronto para executar!", Color3.fromRGB(0, 150, 200))
-end)
-
-ScriptsCentraisButton.MouseButton1Click:Connect(function()
-    CodeTextBox.Text = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/Untitled-2.lua"))()'
-    CreatePopup("Script Carregado", "Scripts Centrais pronto para executar!", Color3.fromRGB(150, 0, 100))
-end)
-
-BlackKingButton.MouseButton1Click:Connect(function()
-    CodeTextBox.Text = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub"))()'
-    CreatePopup("Script Carregado", "BlackKing pronto para executar!", Color3.fromRGB(100, 0, 150))
-end)
-
--- Botões de controle
+-- Botão de executar
 local ExecuteButton = Instance.new("TextButton")
 ExecuteButton.Name = "ExecuteButton"
 ExecuteButton.Size = UDim2.new(0, 120, 0, 35)
-ExecuteButton.Position = UDim2.new(1, -130, 1, -45)
+ExecuteButton.Position = UDim2.new(1, -130, 1, -40)
 ExecuteButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
 ExecuteButton.BorderSizePixel = 0
 ExecuteButton.Font = Enum.Font.GothamBold
@@ -527,402 +252,262 @@ ExecuteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ExecuteButton.TextSize = 14
 ExecuteButton.Parent = MainFrame
 
+-- Botão de limpar
 local ClearButton = Instance.new("TextButton")
 ClearButton.Name = "ClearButton"
 ClearButton.Size = UDim2.new(0, 120, 0, 35)
-ClearButton.Position = UDim2.new(0, 10, 1, -45)
+ClearButton.Position = UDim2.new(0, 10, 1, -40)
 ClearButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
 ClearButton.BorderSizePixel = 0
 ClearButton.Font = Enum.Font.GothamBold
-ClearButton.Text = "LIMPAR CÓDIGO"
+ClearButton.Text = "LIMPAR"
 ClearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClearButton.TextSize = 14
 ClearButton.Parent = MainFrame
 
-ClearButton.MouseButton1Click:Connect(function()
-    CodeTextBox.Text = ""
-    UpdateLineNumbers()
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
-end)
+-- Elementos para esconder quando minimizado
+local elementsToHide = {CodeFrame, OutputFrame, ExecuteButton, ClearButton}
+local isMinimized = false
 
--- Função loadstring que funciona SEM HTTP
-local function CustomLoadString(code)
-    local fn, err = loadstring(code)
-    if fn then return fn end
-    
-    local success, result = pcall(function()
-        local chunk, loadErr = load(code)
-        if chunk then return chunk end
-        
-        local anonymousFn = assert(load("return function()\n"..code.."\nend"))()
-        return anonymousFn
-    end)
-    
-    if success and result then
-        return result
-    else
-        return nil, "Erro ao carregar: "..tostring(result or err)
+local function ToggleMinimize()
+    isMinimized = not isMinimized
+    for _, element in pairs(elementsToHide) do
+        element.Visible = not isMinimized
     end
+    MainFrame.Size = isMinimized and UDim2.new(0, 600, 0, 30) or UDim2.new(0, 600, 0, 500)
+    MinimizeButton.Text = isMinimized and "□" or "_"
 end
 
--- Ambiente de execução completo com TODOS os comandos Lua
-local function CreateExecutionEnvironment()
-    local env = {}
+-- Função de output otimizada
+local function AddOutput(text, color)
+    if not text or string.len(text) == 0 then return end
+    color = color or Color3.fromRGB(200, 200, 200)
     
-    -- 1. Funções Básicas
-    env.assert = assert
-    env.collectgarbage = collectgarbage
-    env.dofile = dofile
-    env.error = error
-    env.getfenv = getfenv
-    env.getmetatable = getmetatable
-    env.ipairs = ipairs
-    env.load = load
-    env.loadfile = loadfile
-    env.loadstring = loadstring
-    env.module = module
-    env.next = next
-    env.pairs = pairs
-    env.pcall = pcall
+    if OutputText.Text == "-- Output aparecerá aqui --" then
+        OutputText.Text = ""
+    end
+    
+    OutputText.Text = OutputText.Text .. os.date("[%H:%M:%S] ") .. tostring(text) .. "\n"
+    OutputText.TextColor3 = color
+end
+
+-- Função para executar scripts longos em partes
+local function ExecuteLongScript(code)
+    -- Dividir o código em partes menores
+    local chunkSize = 100000 -- Tamanho de cada parte (ajuste conforme necessário)
+    local chunks = {}
+    
+    for i = 1, #code, chunkSize do
+        table.insert(chunks, code:sub(i, i + chunkSize - 1))
+    end
+    
+    -- Executar cada parte sequencialmente
+    local env = {}
+    local results = {}
+    
+    -- Configurar environment
+    setmetatable(env, {__index = _G})
+    
+    -- Funções básicas
     env.print = function(...)
         local args = {...}
-        local output = ""
-        for i, v in ipairs(args) do
-            output = output .. (i > 1 and "\t" or "") .. tostring(v)
-        end
-        AddToOutput(output, Color3.fromRGB(200, 200, 255))
+        AddOutput(table.concat(args, "\t"), Color3.fromRGB(0, 162, 255))
     end
-    env.rawequal = rawequal
-    env.rawget = rawget
-    env.rawset = rawset
-    env.require = require
-    env.select = select
-    env.setfenv = setfenv
-    env.setmetatable = setmetatable
-    env.tonumber = tonumber
-    env.tostring = tostring
-    env.type = type
-    env.unpack = unpack
-    env.xpcall = xpcall
-
-    -- 2. Biblioteca Coroutine
-    env.coroutine = {
-        create = coroutine.create,
-        resume = coroutine.resume,
-        running = coroutine.running,
-        status = coroutine.status,
-        wrap = coroutine.wrap,
-        yield = coroutine.yield
-    }
-
-    -- 3. Biblioteca String
-    env.string = {
-        byte = string.byte,
-        char = string.char,
-        dump = string.dump,
-        find = string.find,
-        format = string.format,
-        gmatch = string.gmatch,
-        gsub = string.gsub,
-        len = string.len,
-        lower = string.lower,
-        match = string.match,
-        rep = string.rep,
-        reverse = string.reverse,
-        sub = string.sub,
-        upper = string.upper
-    }
-
-    -- 4. Biblioteca Table
-    env.table = {
-        concat = table.concat,
-        insert = table.insert,
-        maxn = table.maxn,
-        remove = table.remove,
-        sort = table.sort,
-        unpack = table.unpack
-    }
-
-    -- 5. Biblioteca Math
-    env.math = {
-        abs = math.abs,
-        acos = math.acos,
-        asin = math.asin,
-        atan = math.atan,
-        atan2 = math.atan2,
-        ceil = math.ceil,
-        cos = math.cos,
-        cosh = math.cosh,
-        deg = math.deg,
-        exp = math.exp,
-        floor = math.floor,
-        fmod = math.fmod,
-        frexp = math.frexp,
-        huge = math.huge,
-        ldexp = math.ldexp,
-        log = math.log,
-        log10 = math.log10,
-        max = math.max,
-        min = math.min,
-        modf = math.modf,
-        pi = math.pi,
-        pow = math.pow,
-        rad = math.rad,
-        random = math.random,
-        randomseed = math.randomseed,
-        sin = math.sin,
-        sinh = math.sinh,
-        sqrt = math.sqrt,
-        tan = math.tan,
-        tanh = math.tanh
-    }
-
-    -- 6. Biblioteca OS
-    env.os = {
-        clock = os.clock,
-        date = os.date,
-        difftime = os.difftime,
-        execute = os.execute,
-        exit = os.exit,
-        getenv = os.getenv,
-        remove = os.remove,
-        rename = os.rename,
-        setlocale = os.setlocale,
-        time = os.time,
-        tmpname = os.tmpname
-    }
-
-    -- 7. Biblioteca Debug
-    env.debug = {
-        debug = debug.debug,
-        getfenv = debug.getfenv,
-        gethook = debug.gethook,
-        getinfo = debug.getinfo,
-        getlocal = debug.getlocal,
-        getmetatable = debug.getmetatable,
-        getregistry = debug.getregistry,
-        getupvalue = debug.getupvalue,
-        setfenv = debug.setfenv,
-        sethook = debug.sethook,
-        setlocal = debug.setlocal,
-        setmetatable = debug.setmetatable,
-        setupvalue = debug.setupvalue,
-        traceback = debug.traceback
-    }
-
-    -- 8. Objetos Globais do Roblox
-    env.game = game
-    env.workspace = workspace
-    env.script = script
-    env.shared = shared
-    env.plugin = plugin
-
-    -- 9. Todas as classes de instância
-    for _, className in pairs({
-        "Part", "Model", "Script", "LocalScript", "ModuleScript",
-        "Folder", "StringValue", "NumberValue", "BoolValue",
-        "ObjectValue", "CFrameValue", "Color3Value", "Vector3Value",
-        "BrickColorValue", "IntValue", "RayValue", "Motor",
-        "Motor6D", "MotorFeature", "Weld", "WeldConstraint",
-        "BasePart", "UnionOperation", "MeshPart", "CornerWedgePart",
-        "SpawnLocation", "WedgePart", "Terrain", "Camera",
-        "Humanoid", "HumanoidDescription", "Animation", "AnimationTrack",
-        "Pose", "Keyframe", "KeyframeSequence", "KeyframeSequenceProvider",
-        "AnimationController", "AnimationRigData", "AnimationClip",
-        "AnimationClipProvider", "Animator", "AnimationFromVideoCreator",
-        "AnimationFromVideoCreatorService", "AnimationFromVideoCreatorUI",
-        "AnimationFromVideoCreatorUIService", "AnimationFromVideoCreatorUIServiceClient",
-        "AnimationFromVideoCreatorUIServiceServer", "AnimationFromVideoCreatorUIServiceShared",
-        "AnimationFromVideoCreatorUIServiceTest", "AnimationFromVideoCreatorUIServiceTestClient",
-        "AnimationFromVideoCreatorUIServiceTestServer", "AnimationFromVideoCreatorUIServiceTestShared",
-        "AnimationFromVideoCreatorUIServiceTestTest", "AnimationFromVideoCreatorUIServiceTestTestClient",
-        "AnimationFromVideoCreatorUIServiceTestTestServer", "AnimationFromVideoCreatorUIServiceTestTestShared"
-    }) do
-        env[className] = function(...)
-            return Instance.new(className, ...)
+    
+    env.warn = function(...)
+        local args = {...}
+        AddOutput(table.concat(args, "\t"), Color3.fromRGB(255, 165, 0))
+    end
+    
+    env.error = function(...)
+        local args = {...}
+        AddOutput(table.concat(args, "\t"), Color3.fromRGB(255, 50, 50))
+        error(args[1])
+    end
+    
+    -- Executar cada parte
+    for i, chunk in ipairs(chunks) do
+        local fn, err = loadstring(chunk)
+        if not fn then
+            AddOutput("❌ Erro ao compilar parte "..i..": "..tostring(err), Color3.fromRGB(255, 50, 50))
+            return false
+        end
+        
+        setfenv(fn, env)
+        
+        local success, result = pcall(fn)
+        if not success then
+            AddOutput("❌ Erro na parte "..i..": "..tostring(result), Color3.fromRGB(255, 50, 50))
+            return false
+        end
+        
+        if result ~= nil then
+            table.insert(results, result)
         end
     end
-
-    -- 10. Todas as classes de dados
-    env.Vector3 = Vector3
-    env.Vector2 = Vector2
-    env.CFrame = CFrame
-    env.UDim2 = UDim2
-    env.UDim = UDim
-    env.Color3 = Color3
-    env.ColorSequence = ColorSequence
-    env.ColorSequenceKeypoint = ColorSequenceKeypoint
-    env.NumberSequence = NumberSequence
-    env.NumberSequenceKeypoint = NumberSequenceKeypoint
-    env.Rect = Rect
-    env.Region3 = Region3
-    env.Region3int16 = Region3int16
-    env.Faces = Faces
-    env.Axes = Axes
-    env.BrickColor = BrickColor
-    env.PhysicalProperties = PhysicalProperties
-
-    -- 11. Todos os serviços
-    for _, serviceName in pairs({
-        "Players", "Workspace", "Lighting", "ReplicatedStorage",
-        "ServerScriptService", "ServerStorage", "StarterPack",
-        "StarterPlayer", "StarterGui", "SoundService", "Chat",
-        "Teams", "TeleportService", "TextService", "MarketplaceService",
-        "UserInputService", "ContextActionService", "RunService",
-        "GuiService", "HttpService", "CollectionService", "TestService",
-        "PathfindingService", "PhysicsService", "TweenService",
-        "Debris", "InsertService", "BadgeService", "DataStoreService",
-        "GroupService", "MessagingService", "NetworkClient",
-        "NetworkServer", "NotificationService", "SocialService",
-        "FriendService", "GamePassService", "VoiceChatService",
-        "LocalizationService", "AnalyticsService", "MemoryStoreService",
-        "PolicyService", "SessionService", "HapticService", "AvatarService",
-        "AdService", "CloudService", "GameService", "GeometryService",
-        "PermissionsService", "PlayerEmulatorService", "ProximityPromptService",
-        "RenderSettings", "ScriptContext", "ScriptService", "Stats",
-        "TouchInputService", "VRService", "VirtualInputManager",
-        "VirtualUser", "Visit"
-    }) do
-        local success, service = pcall(function()
-            return game:GetService(serviceName)
-        end)
-        if success then
-            env[serviceName] = service
-        end
-    end
-
-    -- 12. Funções úteis personalizadas
-    env.p = env.print -- Atalho para print
-    env.wait = task.wait
-    env.delay = task.delay
-    env.spawn = task.spawn
-
-    -- 13. Loadstring customizado
-    env.loadstring = CustomLoadString
-
-    -- 14. Função para criar instâncias rapidamente
-    env.New = function(className, properties)
-        local instance = Instance.new(className)
-        if properties then
-            for prop, value in pairs(properties) do
-                instance[prop] = value
-            end
-        end
-        return instance
-    end
-
-    return env
+    
+    return true, results
 end
 
--- Função de execução principal
+-- Função de execução segura
 local function ExecuteCode()
     local code = CodeTextBox.Text
     
-    -- Transforma atalho "=" em print
+    -- Mostra notificação
+    StarterGui:SetCore("SendNotification", {
+        Title = "Kauã Executor",
+        Text = "Executando código...",
+        Icon = "rbxassetid://",
+        Duration = 2
+    })
+    
+    -- Limpa o output
+    if OutputText.Text ~= "-- Output aparecerá aqui --" then
+        OutputText.Text = ""
+    end
+    
+    -- Verifica se é um script longo (mais de 500KB)
+    if #code > 500000 then
+        AddOutput("⚠️ Script muito grande detectado. Executando em partes...", Color3.fromRGB(255, 165, 0))
+        
+        local success, results = ExecuteLongScript(code)
+        if success then
+            AddOutput("✅ Execução concluída com sucesso!", Color3.fromRGB(0, 255, 0))
+            if #results > 0 then
+                AddOutput("Resultados: "..tostring(#results).." valores retornados", Color3.fromRGB(180, 255, 180))
+            end
+        end
+        return
+    end
+    
+    -- Cria environment seguro para scripts menores
+    local env = {
+        print = function(...)
+            local args = {...}
+            AddOutput(table.concat(args, "\t"), Color3.fromRGB(0, 162, 255))
+        end,
+        warn = function(...)
+            local args = {...}
+            AddOutput(table.concat(args, "\t"), Color3.fromRGB(255, 165, 0))
+        end,
+        error = function(...)
+            local args = {...}
+            AddOutput(table.concat(args, "\t"), Color3.fromRGB(255, 50, 50))
+            error(args[1])
+        end,
+        loadstring = function(c)
+            local fn, err = loadstring(c)
+            if not fn then fn, err = load(c) end
+            if not fn then error(err or "Erro de compilação") end
+            return fn
+        end,
+        game = game,
+        workspace = workspace,
+        script = script,
+        wait = task.wait,
+        pcall = pcall,
+        require = require,
+        Vector3 = Vector3,
+        CFrame = CFrame,
+        Instance = Instance
+    }
+    
+    -- Suporte para = comando
     if string.sub(code, 1, 1) == "=" then
         code = "print(" .. string.sub(code, 2) .. ")"
     end
     
-    -- Cria ambiente seguro
-    local env = CreateExecutionEnvironment()
-    
     -- Executa o código
-    local success, result = xpcall(function()
-        local fn, err = CustomLoadString(code)
-        if not fn then error(err or "Erro desconhecido ao compilar") end
-        
+    local success, result = pcall(function()
+        local fn, err = env.loadstring(code)
+        if not fn then error(err) end
         setfenv(fn, env)
-        local results = {fn()}
-        
-        if #results > 0 then
-            local output = ""
-            for i, v in ipairs(results) do
-                output = output .. (i > 1 and ", " or "") .. tostring(v)
-            end
-            return output
-        end
-        return "Executado com sucesso!"
-    end, function(err)
-        return tostring(err):gsub("^.+:%d+: ", "")
+        return fn()
     end)
     
-    -- Mostra resultado
+    -- Mostra resultados
     if success then
-        AddToOutput(result, Color3.fromRGB(0, 255, 0))
+        AddOutput("✅ Execução concluída com sucesso!", Color3.fromRGB(0, 255, 0))
+        if result ~= nil then
+            AddOutput("Resultado: "..tostring(result), Color3.fromRGB(180, 255, 180))
+        end
     else
-        AddToOutput(result, Color3.fromRGB(255, 50, 50))
+        AddOutput("❌ Erro na execução:", Color3.fromRGB(255, 50, 50))
+        AddOutput(tostring(result):gsub("^.+:%d+: ", ""), Color3.fromRGB(255, 150, 150))
     end
-    
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
 end
 
+-- Conexões dos botões
 ExecuteButton.MouseButton1Click:Connect(ExecuteCode)
-
--- Atalhos de teclado
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.KeyCode == Enum.KeyCode.F9 then
-        ExecuteCode()
-    end
-    
-    if input.KeyCode == Enum.KeyCode.Return and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-        ExecuteCode()
-    end
+ClearButton.MouseButton1Click:Connect(function()
+    OutputText.Text = "-- Output aparecerá aqui --"
+    OutputText.TextColor3 = Color3.fromRGB(200, 200, 200)
 end)
-
--- Sistema de arrastar
-local dragging = false
-local dragStartPos
-local startFramePos
-
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStartPos = input.Position
-        startFramePos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-                SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
-            end
-        end)
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStartPos
-        MainFrame.Position = UDim2.new(
-            startFramePos.X.Scale, 
-            startFramePos.X.Offset + delta.X,
-            startFramePos.Y.Scale, 
-            startFramePos.Y.Offset + delta.Y
-        )
-    end
-end)
-
--- Fecha o executor e salva o estado
 CloseButton.MouseButton1Click:Connect(function()
-    SaveExecutorState(CodeTextBox.Text, MainFrame.Position, isMinimized, OutputText.Text)
     ScreenGui:Destroy()
 end)
+MinimizeButton.MouseButton1Click:Connect(ToggleMinimize)
 
--- Focar no editor
+-- Atalho F9
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.F9 then
+        ExecuteCode()
+    end
+end)
+
+-- Mensagem inicial
+AddOutput("Kauã Executor carregado!", Color3.fromRGB(100, 200, 255))
+AddOutput("Clique em EXECUTAR!", Color3.fromRGB(200, 200, 200))
+
+-- Focar no editor ao iniciar
 task.defer(function()
     CodeTextBox:CaptureFocus()
 end)
 
--- Restaura o estado minimizado se necessário
-if savedState and savedState.minimized then
-    task.spawn(function()
-        wait(0.1)
-        if not isMinimized then
-            ToggleMinimize()
-        end
-    end)
-end
+-- Parenteio final (teste ambos se necessário)
+ScreenGui.Parent = Player:WaitForChild("PlayerGui") -- Opção 1
+-- ScreenGui.Parent = CoreGui -- Opção 2 (se a 1 não funcionar)
 
-AddToOutput("Kauã Executor ULTIMATE carregado!", Color3.fromRGB(100, 200, 255))
-AddToOutput("Pronto para executar código. Use F9 ou Ctrl+Enter.", Color3.fromRGB(200, 200, 200))
+-- Sistema de persistência
+Player.CharacterAdded:Connect(function()
+    task.wait(1)
+    if not Player.PlayerGui:FindFirstChild("KauaExecutorUltimate") then
+        ScreenGui:Clone().Parent = Player.PlayerGui
+    end
+end)
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Cria a tela onde a mensagem vai aparecer
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "WelcomeScreen"
+screenGui.Parent = playerGui
+
+-- Cria a mensagem de boas-vindas
+local welcomeMessage = Instance.new("TextLabel")
+welcomeMessage.Name = "WelcomeMessage"
+welcomeMessage.Size = UDim2.new(1, 0, 1, 0) -- Tamanho: tela inteira
+welcomeMessage.Position = UDim2.new(0, 0, 0, 0) -- Posição: canto superior esquerdo
+welcomeMessage.Text = "Eae Boas-vindas meu mano!"
+welcomeMessage.TextColor3 = Color3.new(1, 1, 1) -- Texto branco
+welcomeMessage.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Fundo preto
+welcomeMessage.BackgroundTransparency = 0.3 -- 30% transparente
+welcomeMessage.TextSize = 24 -- Tamanho do texto
+welcomeMessage.ZIndex = 10 -- Camada superior
+welcomeMessage.Parent = screenGui
+
+-- Função para fechar a mensagem quando clicada
+welcomeMessage.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        -- Animação de desaparecimento
+        for i = 0.3, 1, 0.05 do
+            welcomeMessage.BackgroundTransparency = i
+            welcomeMessage.TextTransparency = i
+            task.wait(0.05)
+        end
+        welcomeMessage:Destroy()
+        screenGui:Destroy() -- Remove também o ScreenGui
+    end
+end)
