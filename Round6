@@ -1,28 +1,42 @@
 local targetPlaceId = 7549229959
-local teleportPosition = Vector3.new(-44.9, 3.1, -104.2)
+local targetPosition = Vector3.new(-44.9, 3.1, -104.2)
 
--- Notificação de boas-vindas (só uma vez)
+-- Configuração Turbo
+local teleportSpeed = 100 -- Quanto maior, mais rápido (10 = quase instantâneo)
+local minDuration = 0-- Tempo mínimo (segundos) pra manter um pouco da suavidade
+
+-- Notificação
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "BOAAA", 
-    Text = "Boas vindas ao Round 6 hack!", 
-    Icon = "rbxassetid://0" -- ⚠️ Substitua pelo ID de uma imagem válida!
+    Text = "Modo Turbo Ativado!", 
+    Icon = "rbxassetid://0"
 })
 
--- Verifica se estamos no lugar correto
 if game.PlaceId == targetPlaceId then
     local player = game:GetService("Players").LocalPlayer
 
-    -- Loop infinito para teleportar a cada 1 segundo
-    while true do
-        if player.Character then
-            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart then
-                humanoidRootPart.CFrame = CFrame.new(teleportPosition)
-                print("Teleportado para:", teleportPosition)
-            end
+    local function turboTeleport(character)
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        if not humanoidRootPart then return end
+
+        local startPosition = humanoidRootPart.Position
+        local distance = (targetPosition - startPosition).Magnitude
+        local duration = math.max(distance / teleportSpeed, minDuration) -- Garante um mínimo de suavidade
+
+        local startTime = os.clock()
+        
+        -- Loop ultrarrápido
+        while true do
+            local progress = math.min((os.clock() - startTime) / duration, 1)
+            humanoidRootPart.CFrame = CFrame.new(startPosition:Lerp(targetPosition, progress))
+            
+            if progress >= 1 then break end
+            task.wait() -- Roda a cada frame (máximo desempenho)
         end
-        task.wait(1) -- Espera 1 segundo antes de repetir
     end
-else
-    print("Este não é o lugar alvo (PlaceId incorreto).")
+
+    player.CharacterAdded:Connect(turboTeleport)
+    if player.Character then
+        turboTeleport(player.Character)
+    end
 end
