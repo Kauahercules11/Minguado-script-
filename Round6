@@ -1,0 +1,37 @@
+game:GetService("StarterGui"):SetCore("SendNotification",{
+	Title = "BOAAA", -- Required
+	Text = "Boas vindas ao Round 6 hack!", -- Required
+	Icon = "rbxassetid://" -- Optional
+})
+
+local targetPlaceId = 7549229959
+local teleportPosition = Vector3.new(-44.9, 3.1, -104.2)
+
+-- Verifica se estamos no lugar correto
+if game.PlaceId == targetPlaceId then
+    local player = game:GetService("Players").LocalPlayer
+    
+    -- Função para teleportar o personagem
+    local function teleportCharacter(character)
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 3) -- Espera até 3 segundos
+        
+        if humanoidRootPart then
+            -- Pequeno delay para evitar problemas com o terreno
+            task.wait(0.5)
+            humanoidRootPart.CFrame = CFrame.new(teleportPosition)
+            print("Jogador teleportado para:", teleportPosition)
+        else
+            warn("HumanoidRootPart não encontrado!")
+        end
+    end
+
+    -- Conecta para quando o personagem spawnar
+    player.CharacterAdded:Connect(teleportCharacter)
+    
+    -- Teleporta imediatamente se o personagem já existir
+    if player.Character then
+        teleportCharacter(player.Character)
+    end
+else
+    print("Não é o lugar alvo (PlaceId diferente)")
+end
