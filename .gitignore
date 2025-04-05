@@ -1,72 +1,80 @@
--- Parte 1: Remover ItemShop do PlayerGui e MainUI
-local player = game:GetService("Players").LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
-local function removeItemShop()
-    -- Verificar e remover do PlayerGui
-    if playerGui:FindFirstChild("ItemShop") then
-        playerGui.ItemShop:Destroy()
-    end
-    
-    -- Verificar e remover do MainUI (se existir)
-    if playerGui:FindFirstChild("MainUI") then
-        local mainUI = playerGui.MainUI
-        if mainUI:FindFirstChild("ItemShop") then
-            mainUI.ItemShop:Destroy()
-        end
-    end
-    
-    print("ItemShop removido com sucesso!")
-end
-
-removeItemShop()
-
--- Parte 2: Configuração avançada de controle de câmera
+-- Parte 1: Configuração inicial
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
 
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 local camera = workspace.CurrentCamera
 
--- Configurações
-local MOUSE_SENSITIVITY = 0.3  -- Ajuste conforme necessidade
-local MOUSE_LOCKED = true      -- Deixe sempre true para travar o mouse
+-- Parte 2: Remoção contínua de Wardrobe e ItemShop
+local function deepDestroyByName(parent, name)
+    for _, child in ipairs(parent:GetDescendants()) do
+        if child.Name == name then
+            child:Destroy()
+            -- Adiciona um pequeno delay para evitar sobrecarga
+            wait(0.01)
+        end
+    end
+end
 
--- Variáveis para controle suave da câmera
+-- Loop infinito para remoção contínua
+local function continuousRemoval()
+    while true do
+        -- Remove Wardrobes em TODO o jogo (incluindo serviços, pastas e modelos)
+        deepDestroyByName(game, "Wardrobe")
+        
+        -- Remove ItemShop específico
+        if playerGui:FindFirstChild("ItemShop") then
+            playerGui.ItemShop:Destroy()
+        end
+        
+        if playerGui:FindFirstChild("MainUI") then
+            local mainUI = playerGui.MainUI
+            if mainUI:FindFirstChild("ItemShop") then
+                mainUI.ItemShop:Destroy()
+            end
+        end
+        
+        -- Intervalo entre verificações (ajustável)
+        wait(0.5)
+    end
+end
+
+-- Inicia a remoção contínua em uma nova thread
+coroutine.wrap(continuousRemoval)()
+
+-- Parte 3: Controle avançado de câmera
+local MOUSE_SENSITIVITY = 0.3
+local MOUSE_LOCKED = true
 local cameraAngleX = 0
 local cameraAngleY = 0
 
--- Função para atualizar a rotação da câmera
 local function updateCameraRotation()
     if not MOUSE_LOCKED then return end
     
-    -- Pega o movimento do mouse e aplica à câmera
     local delta = UserInputService:GetMouseDelta()
-    
     cameraAngleX = cameraAngleX - delta.X * MOUSE_SENSITIVITY * 0.01
     cameraAngleY = cameraAngleY - delta.Y * MOUSE_SENSITIVITY * 0.01
-    cameraAngleY = math.clamp(cameraAngleY, -math.rad(80), math.rad(80))  -- Limita o ângulo vertical
+    cameraAngleY = math.clamp(cameraAngleY, -math.rad(80), math.rad(80))
     
-    -- Rotaciona a câmera
     camera.CFrame = CFrame.new(camera.CFrame.Position) 
         * CFrame.Angles(0, cameraAngleX, 0) 
         * CFrame.Angles(cameraAngleY, 0, 0)
 end
 
--- Força o mouse a ficar travado, mesmo se outro script tentar mudar
 local function enforceMouseLock()
     if MOUSE_LOCKED then
         UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
     end
 end
 
--- Atualizações constantes para garantir que o mouse não escape
 RunService.RenderStepped:Connect(function()
     enforceMouseLock()
     updateCameraRotation()
 end)
 
--- Caso queira uma tecla para alternar (ex: P)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.P then
         MOUSE_LOCKED = not MOUSE_LOCKED
@@ -74,16 +82,23 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Inicializa travado
 enforceMouseLock()
 
--- Parte 3: Carregar script externo
-local success, errorMsg = pcall(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub"))()
-end)
-
-if not success then
-    warn("Falha ao carregar o script externo: " .. errorMsg)
-else
-    print("Script externo carregado com sucesso!")
+-- Parte 4: Carregar script externo com proteção
+local function loadExternalScript()
+    local success, errorMsg = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub"))()
+    end)
+    
+    if not success then
+        warn("Falha ao carregar o script externo: " .. errorMsg)
+        -- Tenta novamente após 30 segundos
+        wait(30)
+        loadExternalScript()
+    else
+        print("Script externo carregado com sucesso!")
+    end
 end
+
+-- Inicia o carregamento do script externo
+coroutine.wrap(loadExternalScript)()
