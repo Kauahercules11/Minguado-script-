@@ -1,0 +1,12 @@
+	if game.PlaceId == 87716067947993 then
+game.StarterGui:SetCore("SendNotification", { Title = "Notification"; Text = "Go Use new!" })
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DarkDoorsKing/Clinet/main/DoorsRank"))()
+end
+if game.PlaceId ~= 87716067947993 then
+game:GetService("StarterGui"):SetCore("SendNotification",{
+	Title = "Notification", -- Required
+	Text = "Go Use New!", -- Required
+	Icon = "rbxassetid://" -- Optional
+})
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DarkDoorsKing/Doors/main/Main"))()
+end
