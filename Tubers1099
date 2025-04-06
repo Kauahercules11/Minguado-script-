@@ -3,8 +3,6 @@ local PLAYER_TAG = "Tubers1099"
 local GUI_NAME = "Tubers1099_GUI"
 local TAG_SIZE = 36
 local BINARY_CHARS = {"0","1","█","▓","▒","░"}
-local ESP_ENABLED = false
-local ESP_COLOR = Color3.new(1, 0, 0) -- Vermelho para os jogadores
 
 -- Serviços
 local Players = game:GetService("Players")
@@ -12,8 +10,9 @@ local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- Variáveis para ESP
-local ESP_Highlights = {}
+-- Variável para controle do ESP
+local ESPEnabled = false
+local ESPHighlights = {}
 
 -- Verifica e remove GUIs antigas
 local function cleanupOldGUIs()
@@ -24,77 +23,55 @@ local function cleanupOldGUIs()
     end
 end
 
--- Função para criar ESP
-local function createESP(player)
-    if player == Player then return end -- Não mostrar ESP em si mesmo
-    
-    local character = player.Character or player.CharacterAdded:Wait()
-    
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "ESP_"..player.Name
-    highlight.FillColor = ESP_COLOR
-    highlight.OutlineColor = ESP_COLOR
-    highlight.FillTransparency = 0.5
-    highlight.OutlineTransparency = 0
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Parent = character
-    
-    ESP_Highlights[player] = highlight
-    
-    -- Atualizar quando o personagem mudar
-    player.CharacterAdded:Connect(function(newCharacter)
-        if ESP_Highlights[player] then
-            ESP_Highlights[player]:Destroy()
-        end
-        
-        highlight = Instance.new("Highlight")
-        highlight.Name = "ESP_"..player.Name
-        highlight.FillColor = ESP_COLOR
-        highlight.OutlineColor = ESP_COLOR
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.Parent = newCharacter
-        
-        ESP_Highlights[player] = highlight
-    end)
-    
-    player.CharacterRemoving:Connect(function()
-        if ESP_Highlights[player] then
-            ESP_Highlights[player]:Destroy()
-            ESP_Highlights[player] = nil
-        end
-    end)
-end
-
 -- Função para ativar/desativar ESP
 local function toggleESP()
-    ESP_ENABLED = not ESP_ENABLED
+    ESPEnabled = not ESPEnabled
     
-    if ESP_ENABLED then
-        -- Ativar ESP para todos os jogadores
+    if ESPEnabled then
+        -- Ativa ESP para todos os jogadores
         for _, player in ipairs(Players:GetPlayers()) do
-            if player.Character then
-                createESP(player)
+            if player ~= Player and player.Character then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESPHighlight"
+                highlight.FillColor = Color3.new(1, 0, 0)
+                highlight.OutlineColor = Color3.new(1, 0, 0)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlight.Parent = player.Character
+                
+                ESPHighlights[player] = highlight
             end
         end
         
-        -- Conectar para novos jogadores
+        -- Conecta para novos jogadores
         Players.PlayerAdded:Connect(function(player)
             player.CharacterAdded:Connect(function(character)
-                if ESP_ENABLED then
-                    createESP(player)
+                if ESPEnabled then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "ESPHighlight"
+                    highlight.FillColor = Color3.new(1, 0, 0)
+                    highlight.OutlineColor = Color3.new(1, 0, 0)
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    highlight.Parent = character
+                    
+                    ESPHighlights[player] = highlight
                 end
             end)
         end)
+        
+        print("ESP Ativado - Jogadores visíveis através das paredes")
     else
-        -- Desativar ESP
-        for player, highlight in pairs(ESP_Highlights) do
-            if highlight then
+        -- Desativa ESP
+        for player, highlight in pairs(ESPHighlights) do
+            if highlight and highlight.Parent then
                 highlight:Destroy()
             end
         end
-        ESP_Highlights = {}
+        ESPHighlights = {}
+        print("ESP Desativado")
     end
 end
 
@@ -142,7 +119,7 @@ local function createPlayerTag(character)
     
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "HackerTag"
-    billboard.Size = UDim2.new(0, 350, 0, 100) -- Tamanho aumentado
+    billboard.Size = UDim2.new(0, 350, 0, 100)
     billboard.StudsOffset = Vector3.new(0, 3.5, 0)
     billboard.AlwaysOnTop = true
     billboard.Adornee = head
@@ -213,11 +190,11 @@ local function createMainGUI()
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.Parent = PlayerGui
 
-    -- Frame principal
+    -- Frame principal (aumentado para caber 11 botões)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 600, 0, 200)
-    MainFrame.Position = UDim2.new(0.5, -300, 0.5, -100)
+    MainFrame.Size = UDim2.new(0, 700, 0, 220) -- Aumentado para 11 botões
+    MainFrame.Position = UDim2.new(0.5, -350, 0.5, -110)
     MainFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
     MainFrame.BorderColor3 = Color3.new(0, 1, 0)
     MainFrame.BorderSizePixel = 2
@@ -232,7 +209,7 @@ local function createMainGUI()
         digit.TextColor3 = Color3.new(0, math.random(0.5, 1), 0)
         digit.BackgroundTransparency = 1
         digit.Size = UDim2.new(0, 15, 0, 15)
-        digit.Position = UDim2.new(0, math.random(0, 600), 0, math.random(0, 200))
+        digit.Position = UDim2.new(0, math.random(0, 700), 0, math.random(0, 220))
         digit.ZIndex = 0
         digit.Font = Enum.Font.Code
         digit.Parent = MainFrame
@@ -301,186 +278,42 @@ local function createMainGUI()
     CloseButton.ZIndex = 3
     CloseButton.Parent = TitleBar
 
-    -- Container dos botões
+    -- Container dos botões (aumentado para caber 11 botões)
     local ButtonsContainer = Instance.new("Frame")
     ButtonsContainer.Name = "ButtonsContainer"
-    ButtonsContainer.Size = UDim2.new(1, -20, 0, 140)
+    ButtonsContainer.Size = UDim2.new(1, -20, 0, 160)
     ButtonsContainer.Position = UDim2.new(0, 10, 0, 40)
     ButtonsContainer.BackgroundTransparency = 1
     ButtonsContainer.ZIndex = 2
     ButtonsContainer.Parent = MainFrame
 
-    -- Lista de scripts
-    local buttonScripts = {
-        {Name = "AutoWalk", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/geoduude/roblox/refs/heads/master/rooms-autowalk"))()'},
-        {Name = "DEX", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()'},
-        {Name = "JobId", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/Jobid.txt"))()'},
-        {Name = "BlackKing", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub"))()'},
-        {Name = "KaterHub", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/KATERGaming/Roblox/main/KaterHub.Lua"))()'},
-        {Name = "Infinite Yield", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()'},
-        {Name = "Orca", Script = 'loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/richie0866/orca/master/public/snapshot.lua"))()'},
-        {Name = "UNView", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/sinret/rbxscript.com-scripts-reuploads-/main/UNVIew", true))()'},
-        {Name = "ESP", Script = 'toggleESP()'}
-    }
+   -- Lista de scripts
+local buttonScripts = {
+    {Name = "AutoWalk", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/geoduude/roblox/refs/heads/master/rooms-autowalk"))()'},
+    {Name = "DEX", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()'},
+    {Name = "JobId", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/Jobid.txt"))()'},
+    {Name = "BlackKing", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub"))()'},
+    {Name = "KaterHub", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/KATERGaming/Roblox/main/KaterHub.Lua"))()'},
+    {Name = "Infinite Yield", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()'},
+    {Name = "Orca", Script = 'loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/richie0866/orca/master/public/snapshot.lua"))()'},
+    {Name = "UNView", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/sinret/rbxscript.com-scripts-reuploads-/main/UNVIew", true))()'},
+    {Name = "ESP", Script = 'toggleESP()'},
+    {Name = "Kitty-Cats", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/CatEnddroid/Kitty-Cats-Doors-Beta/refs/heads/main/hub.lua"))()'},
+    {Name = "TrollGui", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/KauaDoors%3ALobby"))()'}
+}
 
-    -- Cria duas linhas de botões
-    local topRow = Instance.new("Frame")
-    topRow.Name = "TopRow"
-    topRow.Size = UDim2.new(1, 0, 0.45, 0)
-    topRow.Position = UDim2.new(0, 0, 0, 0)
-    topRow.BackgroundTransparency = 1
-    topRow.Parent = ButtonsContainer
-
-    local bottomRow = Instance.new("Frame")
-    bottomRow.Name = "BottomRow"
-    bottomRow.Size = UDim2.new(1, 0, 0.45, 0)
-    bottomRow.Position = UDim2.new(0, 0, 0.55, 0)
-    bottomRow.BackgroundTransparency = 1
-    bottomRow.Parent = ButtonsContainer
-
-    -- Configurações de layout
-    local buttonsPerRow = 7
-    local buttonWidth = 1 / buttonsPerRow
-    local currentRow = topRow
-    local buttonsInCurrentRow = 0
-
-    -- Cria botões com TextScaled
+    -- Cria botões com TextScaled (agora 11 botões)
     for i, btn in ipairs(buttonScripts) do
-        -- Muda para a segunda linha se necessário
-        if buttonsInCurrentRow >= buttonsPerRow then
-            currentRow = bottomRow
-            buttonsInCurrentRow = 0
-        end
-
         local button = Instance.new("TextButton")
         button.Name = "Btn_"..btn.Name
-        button.Size = UDim2.new(buttonWidth - 0.02, 0, 1, 0)
-        button.Position = UDim2.new(buttonWidth * buttonsInCurrentRow, 0, 0, 0)
-        button.AnchorPoint = Vector2.new(0, 0)
+        button.Size = UDim2.new(0.09, 0, 0.8, 0) -- Ajustado para 11 botões
+        button.Position = UDim2.new(0.09 * (i-1), 0, 0, 10)
         button.BackgroundColor3 = Color3.new(0, 0.1, 0)
         button.BorderColor3 = Color3.new(0, 1, 0)
         button.BorderSizePixel = 1
         button.Text = btn.Name
         button.TextColor3 = Color3.new(0, 1, 0)
-        button.TextSize = 14
+        button.TextSize = 12 -- Reduzido um pouco para caber
         button.Font = Enum.Font.Code
         button.TextScaled = true
-        button.TextWrapped = true
-        button.ZIndex = 3
-        button.Parent = currentRow
-        
-        -- Efeito hover
-        button.MouseEnter:Connect(function()
-            button.BackgroundColor3 = Color3.new(0, 0.3, 0)
-            button.TextColor3 = Color3.new(1, 1, 1)
-        end)
-        
-        button.MouseLeave:Connect(function()
-            button.BackgroundColor3 = Color3.new(0, 0.1, 0)
-            button.TextColor3 = Color3.new(0, 1, 0)
-        end)
-        
-        button.MouseButton1Click:Connect(function()
-            button.TextColor3 = Color3.new(1, 0, 0)
-            task.wait(0.2)
-            button.TextColor3 = Color3.new(0, 1, 0)
-            loadstring(btn.Script)()
-        end)
-
-        buttonsInCurrentRow = buttonsInCurrentRow + 1
-    end
-
-    -- Controle de minimizar
-    local isMinimized = false
-    MinimizeButton.MouseButton1Click:Connect(function()
-        isMinimized = not isMinimized
-        if isMinimized then
-            MainFrame.Size = UDim2.new(0, 600, 0, 30)
-            ButtonsContainer.Visible = false
-            MinimizeButton.Text = "+"
-        else
-            MainFrame.Size = UDim2.new(0, 600, 0, 200)
-            ButtonsContainer.Visible = true
-            MinimizeButton.Text = "_"
-        end
-    end)
-
-    -- Função para fechar com animação
-    local function closeWithAnimation()
-        CloseButton.Active = false
-        MinimizeButton.Active = false
-        MainFrame.Draggable = false
-        
-        -- Muda para tema verde
-        MainFrame.BackgroundColor3 = Color3.new(0, 0.3, 0)
-        TitleBar.BackgroundColor3 = Color3.new(0, 0.5, 0)
-        MainFrame.BorderColor3 = Color3.new(0, 1, 0)
-        
-        -- Animação de fade out
-        local startTime = os.clock()
-        local connection
-        connection = RunService.Heartbeat:Connect(function()
-            local progress = (os.clock() - startTime) / 0.5
-            
-            if progress >= 1 then
-                connection:Disconnect()
-                ScreenGui:Destroy()
-                return
-            end
-            
-            MainFrame.BackgroundTransparency = progress
-            TitleBar.BackgroundTransparency = progress
-            MainFrame.BorderSizePixel = 2 * (1 - progress)
-            
-            for _, child in ipairs(MainFrame:GetDescendants()) do
-                if child:IsA("Frame") then
-                    child.BackgroundTransparency = progress
-                elseif child:IsA("TextLabel") or child:IsA("TextButton") then
-                    child.TextTransparency = progress
-                end
-            end
-        end)
-    end
-
-    CloseButton.MouseButton1Click:Connect(closeWithAnimation)
-
-    print("GUI Tubers1099 criada com sucesso!")
-    return ScreenGui
-end
-
--- Inicialização
-local function initialize()
-    -- Verifica se o player é válido
-    if not Player or not PlayerGui then
-        warn("Player ou PlayerGui não encontrados!")
-        return
-    end
-
-    -- Cria efeitos no personagem
-    local function setupCharacter(character)
-        createHackerEffects(character)
-        createPlayerTag(character)
-        
-        character:WaitForChild("Humanoid").Died:Connect(function()
-            for _, v in ipairs(character:GetDescendants()) do
-                if v.Name == "HackerAura" or v.Name == "HackerTag" then
-                    v:Destroy()
-                end
-            end
-        end)
-    end
-
-    if Player.Character then
-        setupCharacter(Player.Character)
-    end
-    Player.CharacterAdded:Connect(setupCharacter)
-
-    -- Cria a GUI
-    local success, err = pcall(createMainGUI)
-    if not success then
-        warn("Erro ao criar GUI: "..err)
-    end
-end
-
--- Inicia após pequeno delay para garantir que tudo esteja carregado
-task.delay(1, initialize)
+        button.TextW
