@@ -101,7 +101,7 @@ local function createGUI()
     Title.Size = UDim2.new(0.6, 0, 1, 0)
     Title.Position = UDim2.new(0, 5, 0, 0)
     Title.BackgroundTransparency = 1
-    Title.Text = "Kaua Doors:Lobby"
+    Title.Text = "TrollGui"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.Font = Enum.Font.SourceSansBold
     Title.TextSize = 18
