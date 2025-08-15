@@ -193,8 +193,8 @@ local function createMainGUI()
     -- Frame principal
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 650, 0, 200) -- Aumentado para 9 botões
-    MainFrame.Position = UDim2.new(0.5, -325, 0.5, -100)
+    MainFrame.Size = UDim2.new(0, 650, 0, 220) -- Aumentado para 11 botões
+    MainFrame.Position = UDim2.new(0.5, -325, 0.5, -110)
     MainFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
     MainFrame.BorderColor3 = Color3.new(0, 1, 0)
     MainFrame.BorderSizePixel = 2
@@ -209,7 +209,7 @@ local function createMainGUI()
         digit.TextColor3 = Color3.new(0, math.random(0.5, 1), 0)
         digit.BackgroundTransparency = 1
         digit.Size = UDim2.new(0, 15, 0, 15)
-        digit.Position = UDim2.new(0, math.random(0, 650), 0, math.random(0, 200))
+        digit.Position = UDim2.new(0, math.random(0, 650), 0, math.random(0, 220))
         digit.ZIndex = 0
         digit.Font = Enum.Font.Code
         digit.Parent = MainFrame
@@ -281,13 +281,13 @@ local function createMainGUI()
     -- Container dos botões
     local ButtonsContainer = Instance.new("Frame")
     ButtonsContainer.Name = "ButtonsContainer"
-    ButtonsContainer.Size = UDim2.new(1, -20, 0, 140)
+    ButtonsContainer.Size = UDim2.new(1, -20, 0, 160)
     ButtonsContainer.Position = UDim2.new(0, 10, 0, 40)
     ButtonsContainer.BackgroundTransparency = 1
     ButtonsContainer.ZIndex = 2
     ButtonsContainer.Parent = MainFrame
 
-    -- Lista de scripts (agora com 9 botões incluindo ESP)
+    -- Lista de scripts (agora com 11 botões)
     local buttonScripts = {
         {Name = "AutoWalk", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/geoduude/roblox/refs/heads/master/rooms-autowalk"))()'},
         {Name = "DEX", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()'},
@@ -297,16 +297,18 @@ local function createMainGUI()
         {Name = "Infinite Yield", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()'},
         {Name = "Orca", Script = 'loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/richie0866/orca/master/public/snapshot.lua"))()'},
         {Name = "UNView", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/sinret/rbxscript.com-scripts-reuploads-/main/UNVIew", true))()'},
-        {Name = "ESP", Script = 'toggleESP()'}, -- Novo botão ESP
-		{Name = "Kitty-Kats", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/CatEnddroid/Kitty-Cats-Doors-Beta/refs/heads/main/hub.lua"))()'}
+        {Name = "ESP", Script = 'toggleESP()'},
+        {Name = "Kitty-Kats", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/CatEnddroid/Kitty-Cats-Doors-Beta/refs/heads/main/hub.lua"))()'},
+        {Name = "Egor script", Script = 'loadstring(game:HttpGet("https://github.com/Kauahercules11/Minguado-script-/blob/main/EgorScript.lua"))()'},
+        {Name = "C00lGUI", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/MiRw3b/c00lgui-v3rx/main/c00lguiv3rx.lua"))()'}
     }
 
-    -- Cria botões com TextScaled (agora 9 botões)
+    -- Cria botões com TextScaled (agora 11 botões)
     for i, btn in ipairs(buttonScripts) do
         local button = Instance.new("TextButton")
         button.Name = "Btn_"..btn.Name
-        button.Size = UDim2.new(0.09, 0, 0.8, 0)
-        button.Position = UDim2.new(0.09 * (i-1), 0, 0, 10)
+        button.Size = UDim2.new(0.08, 0, 0.8, 0) -- Ajustado para 0.08 para caber 11 botões
+        button.Position = UDim2.new(0.08 * (i-1), 0, 0, 10)
         button.BackgroundColor3 = Color3.new(0, 0.1, 0)
         button.BorderColor3 = Color3.new(0, 1, 0)
         button.BorderSizePixel = 1
@@ -352,7 +354,7 @@ local function createMainGUI()
             ButtonsContainer.Visible = false
             MinimizeButton.Text = "+"
         else
-            MainFrame.Size = UDim2.new(0, 650, 0, 200)
+            MainFrame.Size = UDim2.new(0, 650, 0, 220)
             ButtonsContainer.Visible = true
             MinimizeButton.Text = "_"
         end
