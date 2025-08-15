@@ -299,7 +299,7 @@ local function createMainGUI()
         {Name = "UNView", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/sinret/rbxscript.com-scripts-reuploads-/main/UNVIew", true))()'},
         {Name = "ESP", Script = 'toggleESP()'},
         {Name = "Kitty-Kats", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/CatEnddroid/Kitty-Cats-Doors-Beta/refs/heads/main/hub.lua"))()'},
-        {Name = "Egor script", Script = 'loadstring(game:HttpGet("https://github.com/Kauahercules11/Minguado-script-/blob/main/EgorScript.lua"))()'},
+        {Name = "Egor script", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/EgorScript.lua"))()'},
         {Name = "C00lGUI", Script = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/MiRw3b/c00lgui-v3rx/main/c00lguiv3rx.lua"))()'}
     }
 
