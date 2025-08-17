@@ -25,7 +25,7 @@ local comandos = {
     end},
 	 {Name = "egor", Script = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/EgorScript.lua"))()
-	 end}
+	 end},
 	 {Name = "inf", Script = function()
 	 loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
 	 end},
