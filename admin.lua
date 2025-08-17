@@ -53,6 +53,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/d
 	 {Name = "doors", Script = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-obf/main/Doors%20Blackking%20And%20BobHub"))()
 	 end},
+	{Name = "ink", Script = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VW-Add/main/inkgame.lua", true))()
+		end},
 }
 
 -- Criar GUI
