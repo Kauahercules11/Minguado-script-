@@ -59,6 +59,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VW-Add/m
 {Name = "char", Script = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/char.lua"))()
 		end},
+	{Name = "fly", Script = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/fly.lua"))()
+		end},
 }
 
 -- Criar GUI
