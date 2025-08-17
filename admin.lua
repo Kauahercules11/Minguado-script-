@@ -56,6 +56,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/KINGHUB01/BlackKing-o
 	{Name = "ink", Script = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VW-Add/main/inkgame.lua", true))()
 		end},
+{Name = "char", Script = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/char.lua"))()
+		end},
 }
 
 -- Criar GUI
