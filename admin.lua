@@ -71,6 +71,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Biem6ondo/mc/refs/hea
 	{Name = "steve", Script = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/steve.lua"))()
 		end},
+	{Name = "steve", Script = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Emerson2-creator/Scripts-Roblox/refs/heads/main/ScriptR6/AnimGuiV2.lua"))()
+		end},
 }
 
 -- Criar GUI
