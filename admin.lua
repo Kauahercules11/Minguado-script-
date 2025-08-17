@@ -69,7 +69,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Mingua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Biem6ondo/mc/refs/heads/main/STARTUP"))()
 		end},
 	{Name = "steve", Script = function()
-
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/steve.lua"))()
 		end},
 }
 
