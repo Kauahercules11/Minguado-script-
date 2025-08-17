@@ -65,6 +65,12 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Mingua
 {Name = "noclip", Script = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Minguado-script-/refs/heads/main/noclip.lua"))()
 		end},
+{Name = "mine", Script = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Biem6ondo/mc/refs/heads/main/STARTUP"))()
+		end},
+	{Name = "steve", Script = function()
+
+		end},
 }
 
 -- Criar GUI
