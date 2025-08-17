@@ -177,6 +177,9 @@ local function createGUI()
     local highlights = {}
     local minimizeKey = "R"
 
+    -- >>> NOVA VARIÁVEL: distância de TP (studs)
+    local tpDistanceStuds = 2
+
     -- =======================
     -- FUNÇÕES
     -- =======================
@@ -315,6 +318,7 @@ local function createGUI()
                 espEnabled = not espEnabled
                 if espEnabled then createESP(currentTarget) btn.Text="ESP: ON"
                 else removeESP(currentTarget) btn.Text="ESP Player" end
+
             elseif btnData.Name=="ToggleAllESP" then
                 allEspEnabled = not allEspEnabled
                 if allEspEnabled then
@@ -326,6 +330,7 @@ local function createGUI()
                     clearAllESP()
                     btn.Text="ESP All Players"
                 end
+
             elseif btnData.Name=="ToggleSpectate" then
                 if not currentTarget then return end
                 spectateEnabled = not spectateEnabled
@@ -336,14 +341,17 @@ local function createGUI()
                     camera.CameraSubject=player.Character:FindFirstChild("Humanoid")
                     btn.Text="Spectate Player"
                 end
+
             elseif btnData.Name=="TeleportToPlayer" then
                 if currentTarget and currentTarget.Character and player.Character then
                     local rootPart=player.Character:FindFirstChild("HumanoidRootPart")
                     local targetRoot=currentTarget.Character:FindFirstChild("HumanoidRootPart")
                     if rootPart and targetRoot then
-                        rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,2)
+                        -- >>> usa a distância configurada na nova TextBox
+                        rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,tpDistanceStuds)
                     end
                 end
+
             elseif btnData.Name=="ToggleLoopTP" then
                 loopTPEnabled = not loopTPEnabled
                 if loopTPEnabled then
@@ -353,7 +361,8 @@ local function createGUI()
                             local rootPart=player.Character:FindFirstChild("HumanoidRootPart")
                             local targetRoot=currentTarget.Character:FindFirstChild("HumanoidRootPart")
                             if rootPart and targetRoot then
-                                rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,2)
+                                -- >>> usa a distância configurada na nova TextBox
+                                rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,tpDistanceStuds)
                             end
                         end
                     end)
@@ -364,6 +373,31 @@ local function createGUI()
             end
         end)
     end
+
+    -- >>> NOVA TEXTBOX: Distância de TP (studs)
+    -- Mantendo a GUI original e adicionando abaixo dos outros botões sem deslocar os existentes.
+    local TPDistanceBox = Instance.new("TextBox")
+    TPDistanceBox.Name = "TPDistanceBox"
+    TPDistanceBox.Size = UDim2.new(0.9, 0, 0, 25)
+    TPDistanceBox.Position = UDim2.new(0.05, 0, 0, 340)
+    TPDistanceBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    TPDistanceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TPDistanceBox.PlaceholderText = "Distância TP (studs) | padrão: 2"
+    TPDistanceBox.Text = tostring(tpDistanceStuds)
+    TPDistanceBox.ClearTextOnFocus = false
+    TPDistanceBox.Parent = MainFrame
+
+    TPDistanceBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local n = tonumber(TPDistanceBox.Text)
+            if n and n >= -1000 and n <= 1000 then
+                tpDistanceStuds = n
+            else
+                tpDistanceStuds = 2
+                TPDistanceBox.Text = "2"
+            end
+        end
+    end)
 
     -- Atualiza target ao digitar nome
     PlayerSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
