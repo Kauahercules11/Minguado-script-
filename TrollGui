@@ -71,8 +71,8 @@ local function createGUI()
 
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 470) -- ↑ aumentada para caber os novos botões/caixas
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -235)
+    MainFrame.Size = UDim2.new(0, 320, 0, 420)
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -210)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
     MainFrame.Draggable = true
@@ -177,15 +177,8 @@ local function createGUI()
     local highlights = {}
     local minimizeKey = "R"
 
-    -- Distância de TP (studs) para TP normal/loop
+    -- >>> NOVA VARIÁVEL: distância de TP (studs)
     local tpDistanceStuds = 2
-
-    -- Novos loops: estados/conexões
-    local loopBFEnabled, loopBFConnection = false, nil   -- Behind & Front
-    local loopFBEnabled, loopFBConnection = false, nil   -- Front & Behind
-
-    -- Velocidade do loop em passos por segundo (maior = mais rápido)
-    local loopStepsPerSecondDefault = 6
 
     -- =======================
     -- FUNÇÕES
@@ -231,24 +224,6 @@ local function createGUI()
             end
         end
         PlayerExamples.Text = exampleText
-    end
-
-    -- Teleporte robusto (melhor contato em jogos de combate)
-    local function tpToOffset(target, zOffset)
-        if not (target and target.Character and player.Character) then return end
-        local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-        local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-        if rootPart and targetRoot then
-            -- segue o alvo e compensa movimento
-            local vel = targetRoot.AssemblyLinearVelocity
-            local bias = Vector3.new()
-            if vel.Magnitude > 0.1 then
-                bias = vel.Unit * 0.1 -- pequeno empurrão na direção que o alvo está se movendo
-            end
-            rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,zOffset) + bias
-            -- iguala velocidade para manter contato
-            rootPart.AssemblyLinearVelocity = vel
-        end
     end
 
     -- =======================
@@ -303,7 +278,7 @@ local function createGUI()
         end
     end)
 
-    -- Teleport Spawn (coords fixas)
+    -- Teleport Spawn
     local TeleportSpawnButton = Instance.new("TextButton")
     TeleportSpawnButton.Size = UDim2.new(0.9,0,0,25)
     TeleportSpawnButton.Position = UDim2.new(0.05,0,0,160)
@@ -317,7 +292,7 @@ local function createGUI()
         end
     end)
 
-    -- ESP, Spectate, Loop TP padrão, TeleportToPlayer
+    -- ESP, Spectate, Loop TP, TeleportToPlayer
     local buttons = {
         {Name="ToggleSpectate", Text="Spectate Player", YPos=190, Visible=false},
         {Name="ToggleESP", Text="ESP Player", YPos=220, Visible=false},
@@ -369,28 +344,25 @@ local function createGUI()
 
             elseif btnData.Name=="TeleportToPlayer" then
                 if currentTarget and currentTarget.Character and player.Character then
-                    tpToOffset(currentTarget, tpDistanceStuds)
+                    local rootPart=player.Character:FindFirstChild("HumanoidRootPart")
+                    local targetRoot=currentTarget.Character:FindFirstChild("HumanoidRootPart")
+                    if rootPart and targetRoot then
+                        -- >>> usa a distância configurada na nova TextBox
+                        rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,tpDistanceStuds)
+                    end
                 end
 
             elseif btnData.Name=="ToggleLoopTP" then
                 loopTPEnabled = not loopTPEnabled
-                -- desligar loops especiais se o loop padrão ligar
-                if loopTPEnabled then
-                    if loopBFConnection then loopBFConnection:Disconnect() loopBFConnection=nil end
-                    if loopFBConnection then loopFBConnection:Disconnect() loopFBConnection=nil end
-                    loopBFEnabled=false; loopFBEnabled=false
-                end
-
                 if loopTPEnabled then
                     btn.Text="Stop Loop TP"
-                    local acc = 0
-                    local delayBetween = 1/(loopStepsPerSecondDefault)
-                    loopTPConnection=RunService.Heartbeat:Connect(function(dt)
-                        acc += dt
-                        if acc >= delayBetween then
-                            acc = 0
-                            if currentTarget and currentTarget.Character and player.Character then
-                                tpToOffset(currentTarget, tpDistanceStuds)
+                    loopTPConnection=RunService.Heartbeat:Connect(function()
+                        if currentTarget and currentTarget.Character and player.Character then
+                            local rootPart=player.Character:FindFirstChild("HumanoidRootPart")
+                            local targetRoot=currentTarget.Character:FindFirstChild("HumanoidRootPart")
+                            if rootPart and targetRoot then
+                                -- >>> usa a distância configurada na nova TextBox
+                                rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,tpDistanceStuds)
                             end
                         end
                     end)
@@ -402,7 +374,8 @@ local function createGUI()
         end)
     end
 
-    -- Distância TP (studs) - usada por TP normal, Loop padrão e pelos novos loops
+    -- >>> NOVA TEXTBOX: Distância de TP (studs)
+    -- Mantendo a GUI original e adicionando abaixo dos outros botões sem deslocar os existentes.
     local TPDistanceBox = Instance.new("TextBox")
     TPDistanceBox.Name = "TPDistanceBox"
     TPDistanceBox.Size = UDim2.new(0.9, 0, 0, 25)
@@ -426,125 +399,6 @@ local function createGUI()
         end
     end)
 
-    -- NOVA TEXTBOX: Velocidade do Loop (passos por segundo)
-    local LoopSpeedBox = Instance.new("TextBox")
-    LoopSpeedBox.Name = "LoopSpeedBox"
-    LoopSpeedBox.Size = UDim2.new(0.9, 0, 0, 25)
-    LoopSpeedBox.Position = UDim2.new(0.05, 0, 0, 370)
-    LoopSpeedBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    LoopSpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    LoopSpeedBox.PlaceholderText = "Velocidade Loop (passos/seg) | padrão: 6"
-    LoopSpeedBox.Text = tostring(loopStepsPerSecondDefault)
-    LoopSpeedBox.ClearTextOnFocus = false
-    LoopSpeedBox.Parent = MainFrame
-
-    local function getLoopDelay()
-        local v = tonumber(LoopSpeedBox.Text)
-        if v and v > 0 then
-            -- maior v = mais rápido (passos por segundo) -> delay = 1/v
-            v = math.clamp(v, 0.1, 60)
-            return 1 / v
-        end
-        return 1 / loopStepsPerSecondDefault
-    end
-
-    -- NOVO BOTÃO: Loop TP Behind & Front (0,1,2,3,4,5,4,3,2,1,0, ...)
-    local LoopBFButton = Instance.new("TextButton")
-    LoopBFButton.Name = "ToggleLoopBF"
-    LoopBFButton.Size = UDim2.new(0.9, 0, 0, 25)
-    LoopBFButton.Position = UDim2.new(0.05, 0, 0, 400)
-    LoopBFButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    LoopBFButton.TextColor3 = Color3.fromRGB(255,255,255)
-    LoopBFButton.Text = "Loop TP Behind and Front"
-    LoopBFButton.Parent = MainFrame
-
-    -- NOVO BOTÃO: Loop TP Front & Behind (0,-1,-2,-3,-4,-5,-4,-3,-2,-1,0, ...)
-    local LoopFBButton = Instance.new("TextButton")
-    LoopFBButton.Name = "ToggleLoopFB"
-    LoopFBButton.Size = UDim2.new(0.9, 0, 0, 25)
-    LoopFBButton.Position = UDim2.new(0.05, 0, 0, 430)
-    LoopFBButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    LoopFBButton.TextColor3 = Color3.fromRGB(255,255,255)
-    LoopFBButton.Text = "Loop TP Front and Behind"
-    LoopFBButton.Parent = MainFrame
-
-    local function buildPattern(maxAbs, sign)
-        -- sign = 1 (behind & front usando +offset) | sign = -1 (front & behind usando -offset)
-        maxAbs = math.max(0, math.floor(math.abs(maxAbs)))
-        local t = {}
-        for i = 0, maxAbs do table.insert(t, sign * i) end
-        for i = maxAbs - 1, 1, -1 do table.insert(t, sign * i) end
-        return t
-    end
-
-    local function stopSpecialLoops()
-        if loopBFConnection then loopBFConnection:Disconnect() loopBFConnection=nil end
-        if loopFBConnection then loopFBConnection:Disconnect() loopFBConnection=nil end
-        loopBFEnabled=false; loopFBEnabled=false
-    end
-
-    LoopBFButton.MouseButton1Click:Connect(function()
-        if not currentTarget then return end
-
-        -- desligar loop padrão se existir e outros loops
-        if loopTPConnection then loopTPConnection:Disconnect() loopTPConnection=nil end
-        loopTPEnabled=false
-        if loopFBConnection then loopFBConnection:Disconnect() loopFBConnection=nil end
-        loopFBEnabled=false
-
-        loopBFEnabled = not loopBFEnabled
-        if loopBFEnabled then
-            LoopBFButton.Text = "Stop Loop Behind & Front"
-            local acc, idx = 0, 1
-            local pattern = buildPattern(tpDistanceStuds, 1) -- 0..+max..0
-            loopBFConnection = RunService.Heartbeat:Connect(function(dt)
-                acc += dt
-                if acc >= getLoopDelay() then
-                    acc = 0
-                    if not (currentTarget and currentTarget.Character and player.Character) then return end
-                    local offset = pattern[idx] or 0
-                    tpToOffset(currentTarget, offset)
-                    idx = idx + 1
-                    if idx > #pattern then idx = 1 end
-                end
-            end)
-        else
-            LoopBFButton.Text = "Loop TP Behind and Front"
-            if loopBFConnection then loopBFConnection:Disconnect() loopBFConnection=nil end
-        end
-    end)
-
-    LoopFBButton.MouseButton1Click:Connect(function()
-        if not currentTarget then return end
-
-        -- desligar loop padrão e o BF
-        if loopTPConnection then loopTPConnection:Disconnect() loopTPConnection=nil end
-        loopTPEnabled=false
-        if loopBFConnection then loopBFConnection:Disconnect() loopBFConnection=nil end
-        loopBFEnabled=false
-
-        loopFBEnabled = not loopFBEnabled
-        if loopFBEnabled then
-            LoopFBButton.Text = "Stop Loop Front & Behind"
-            local acc, idx = 0, 1
-            local pattern = buildPattern(tpDistanceStuds, -1) -- 0..-max..0
-            loopFBConnection = RunService.Heartbeat:Connect(function(dt)
-                acc += dt
-                if acc >= getLoopDelay() then
-                    acc = 0
-                    if not (currentTarget and currentTarget.Character and player.Character) then return end
-                    local offset = pattern[idx] or 0
-                    tpToOffset(currentTarget, offset)
-                    idx = idx + 1
-                    if idx > #pattern then idx = 1 end
-                end
-            end)
-        else
-            LoopFBButton.Text = "Loop TP Front and Behind"
-            if loopFBConnection then loopFBConnection:Disconnect() loopFBConnection=nil end
-        end
-    end)
-
     -- Atualiza target ao digitar nome
     PlayerSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         currentTarget=nil
@@ -559,13 +413,6 @@ local function createGUI()
         end
         for _, btnName in pairs({"ToggleSpectate","ToggleESP","ToggleLoopTP","TeleportToPlayer"}) do
             MainFrame[btnName].Visible=currentTarget~=nil
-        end
-
-        -- se o alvo mudou, pare os loops especiais para evitar bugs
-        if currentTarget == nil then
-            stopSpecialLoops()
-            LoopBFButton.Text = "Loop TP Behind and Front"
-            LoopFBButton.Text = "Loop TP Front and Behind"
         end
     end)
 
