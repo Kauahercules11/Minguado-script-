@@ -70,7 +70,7 @@ local function createGUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 490) -- Aumentado para acomodar novos botões
+    MainFrame.Size = UDim2.new(0, 320, 0, 490)
     MainFrame.Position = UDim2.new(0.5, -160, 0.5, -245)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
@@ -192,6 +192,12 @@ local function createGUI()
     local egorSpeedMultiplier = 3.5
     local humanoidMoveConnection = nil
     local humanoid = nil
+    local animator = nil
+    local walkAnimationTrack = nil
+    local idleAnimationTrack = nil
+    local walkAnimationId = "rbxassetid://3760534309" -- Animação de andar padrão do Roblox
+    local idleAnimationId = "rbxassetid://180435571" -- Animação de idle padrão do Roblox
+    local egorModeConnection = nil
     
     -- >>> NOVA VARIÁVEL: distância de TP (studs)
     local tpDistanceStuds = 2
@@ -255,15 +261,75 @@ local function createGUI()
             humanoidMoveConnection = nil
         end
         
+        if egorModeConnection then
+            egorModeConnection:Disconnect()
+            egorModeConnection = nil
+        end
+        
         if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
             humanoid = player.Character:FindFirstChildOfClass("Humanoid")
             originalWalkSpeed = humanoid.WalkSpeed
+            
+            -- Encontrar ou criar animator
+            animator = humanoid:FindFirstChildOfClass("Animator")
+            if not animator then
+                animator = Instance.new("Animator")
+                animator.Parent = humanoid
+            end
+            
+            -- Carregar animações
+            if not walkAnimationTrack then
+                local walkAnimation = Instance.new("Animation")
+                walkAnimation.AnimationId = walkAnimationId
+                walkAnimationTrack = animator:LoadAnimation(walkAnimation)
+                walkAnimationTrack.Priority = Enum.AnimationPriority.Core
+            end
+            
+            if not idleAnimationTrack then
+                local idleAnimation = Instance.new("Animation")
+                idleAnimation.AnimationId = idleAnimationId
+                idleAnimationTrack = animator:LoadAnimation(idleAnimation)
+                idleAnimationTrack.Priority = Enum.AnimationPriority.Core
+            end
             
             -- Conectar ao evento de movimento para Freeze Mode
             humanoidMoveConnection = humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
                 if freezeModeEnabled and humanoid then
                     -- Congela o personagem mas mantém a animação
                     humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                    
+                    -- Forçar animação de andar quando tentar se mover
+                    if humanoid.MoveDirection.Magnitude > 0 then
+                        if walkAnimationTrack then
+                            walkAnimationTrack:Play()
+                            walkAnimationTrack:AdjustSpeed(1)
+                        end
+                        if idleAnimationTrack then
+                            idleAnimationTrack:Stop()
+                        end
+                    else
+                        if walkAnimationTrack then
+                            walkAnimationTrack:Stop()
+                        end
+                        if idleAnimationTrack then
+                            idleAnimationTrack:Play()
+                        end
+                    end
+                end
+            end)
+            
+            -- Conectar para Egor Mode
+            egorModeConnection = RunService.Heartbeat:Connect(function()
+                if egorModeEnabled and humanoid and animator then
+                    -- Acelerar todas as animações em execução
+                    for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+                        if track ~= walkAnimationTrack and track ~= idleAnimationTrack then
+                            if not originalAnimations[track] then
+                                originalAnimations[track] = track.Speed
+                            end
+                            track:AdjustSpeed(egorSpeedMultiplier)
+                        end
+                    end
                 end
             end)
         end
@@ -276,9 +342,22 @@ local function createGUI()
             if freezeModeEnabled then
                 -- Congela o personagem
                 humanoid.WalkSpeed = 0
+                
+                -- Iniciar animação de idle
+                if idleAnimationTrack then
+                    idleAnimationTrack:Play()
+                end
             else
-                -- Restaura a velocidade normal
+                -- Restaurar a velocidade normal
                 humanoid.WalkSpeed = originalWalkSpeed
+                
+                -- Parar animações forçadas
+                if walkAnimationTrack then
+                    walkAnimationTrack:Stop()
+                end
+                if idleAnimationTrack then
+                    idleAnimationTrack:Stop()
+                end
             end
         end
         
@@ -290,29 +369,22 @@ local function createGUI()
         
         if player.Character and humanoid then
             if egorModeEnabled then
-                -- Acelera a animação de andar
-                local animator = humanoid:FindFirstChildOfClass("Animator")
-                if animator then
-                    -- Salvar animações originais
-                    originalAnimations = {}
-                    
-                    -- Acelerar todas as animações em execução
-                    for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-                        originalAnimations[track] = track.Speed
-                        track:AdjustSpeed(egorSpeedMultiplier)
-                    end
+                -- Acelerar a animação de andar
+                if walkAnimationTrack then
+                    walkAnimationTrack:AdjustSpeed(egorSpeedMultiplier)
                 end
             else
                 -- Restaurar velocidades normais das animações
-                local animator = humanoid:FindFirstChildOfClass("Animator")
-                if animator then
-                    for track, originalSpeed in pairs(originalAnimations) do
-                        if track then
-                            track:AdjustSpeed(originalSpeed)
-                        end
-                    end
-                    originalAnimations = {}
+                if walkAnimationTrack then
+                    walkAnimationTrack:AdjustSpeed(1)
                 end
+                
+                for track, originalSpeed in pairs(originalAnimations) do
+                    if track then
+                        track:AdjustSpeed(originalSpeed)
+                    end
+                end
+                originalAnimations = {}
             end
         end
         
@@ -323,6 +395,17 @@ local function createGUI()
     player.CharacterAdded:Connect(function(character)
         wait(0.5) -- Esperar o humanoid ser criado
         setupHumanoid()
+        
+        -- Reaplicar modos se estiverem ativos
+        if freezeModeEnabled then
+            toggleFreezeMode()
+            toggleFreezeMode()
+        end
+        
+        if egorModeEnabled then
+            toggleEgorMode()
+            toggleEgorMode()
+        end
     end)
     
     if player.Character then
@@ -556,6 +639,11 @@ local function createGUI()
             local n = tonumber(EgorSpeedBox.Text)
             if n and n >= 1 and n <= 10 then
                 egorSpeedMultiplier = n
+                
+                -- Atualizar imediatamente se Egor Mode estiver ativo
+                if egorModeEnabled and walkAnimationTrack then
+                    walkAnimationTrack:AdjustSpeed(egorSpeedMultiplier)
+                end
             else
                 egorSpeedMultiplier = 3.5
                 EgorSpeedBox.Text = "3.5"
