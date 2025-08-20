@@ -15,12 +15,12 @@ local function createServerScript()
         remote.Name = "KauaRemote"
         remote.Parent = ReplicatedStorage
     end
-
+    
     local serverScript = [[
         local Players = game:GetService("Players")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local remote = ReplicatedStorage:WaitForChild("KauaRemote")
-
+        
         local function modifySounds()
             local sounds = {
                 {Name = "Music", Id = "rbxassetid://103086632976213"},
@@ -28,29 +28,29 @@ local function createServerScript()
                 {Name = "MusicOutside", Id = "rbxassetid://88031675362294"},
                 {Name = "MusicOutsideEnd", Id = "rbxassetid://88031675362294"}
             }
-
+            
             for _, soundData in pairs(sounds) do
-                local sound = game:GetService("ServerScriptService"):FindFirstChild("PlayerGui", true)
-                              and game.ServerScriptService.PlayerGui:FindFirstChild("MainUI", true)
-                              and game.ServerScriptService.PlayerGui.MainUI:FindFirstChild("Initiator", true)
-                              and game.ServerScriptService.PlayerGui.MainUI.Initiator:FindFirstChild("Main_Lobby", true)
-                              and game.ServerScriptService.PlayerGui.MainUI.Initiator.Main_Lobby:FindFirstChild(soundData.Name, true)
+                local sound = game:GetService("ServerScriptService"):FindFirstChild("PlayerGui", true) and 
+                             game.ServerScriptService.PlayerGui:FindFirstChild("MainUI", true) and 
+                             game.ServerScriptService.PlayerGui.MainUI:FindFirstChild("Initiator", true) and 
+                             game.ServerScriptService.PlayerGui.MainUI.Initiator:FindFirstChild("Main_Lobby", true) and 
+                             game.ServerScriptService.PlayerGui.MainUI.Initiator.Main_Lobby:FindFirstChild(soundData.Name, true)
                 
                 if sound then
                     sound.SoundId = soundData.Id
                 end
             end
         end
-
+        
         remote.OnServerEvent:Connect(function(player, action)
             if action == "modifySounds" then
                 modifySounds()
             end
         end)
-
+        
         modifySounds()
     ]]
-
+    
     ReplicatedStorage.KauaRemote:FireServer("createScript", serverScript)
 end
 
@@ -59,33 +59,32 @@ end
 -- =============================================
 local function createGUI()
     local PlayerGui = player:WaitForChild("PlayerGui")
-    
     if PlayerGui:FindFirstChild("KauaDoorsGUI") then
         PlayerGui.KauaDoorsGUI:Destroy()
     end
-
+    
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "KauaDoorsGUI"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.Parent = PlayerGui
-
+    
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 420)
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -210)
+    MainFrame.Size = UDim2.new(0, 320, 0, 490) -- Aumentado para acomodar novos botões
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -245)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
     MainFrame.Draggable = true
     MainFrame.Visible = true
     MainFrame.Parent = ScreenGui
-
+    
     local TitleBar = Instance.new("Frame")
     TitleBar.Name = "TitleBar"
     TitleBar.Size = UDim2.new(1, 0, 0, 30)
     TitleBar.Position = UDim2.new(0, 0, 0, 0)
     TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     TitleBar.Parent = MainFrame
-
+    
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
     Title.Size = UDim2.new(0.6, 0, 1, 0)
@@ -97,7 +96,7 @@ local function createGUI()
     Title.TextSize = 18
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleBar
-
+    
     local MinimizeKeyBox = Instance.new("TextBox")
     MinimizeKeyBox.Name = "MinimizeKeyBox"
     MinimizeKeyBox.Size = UDim2.new(0.3, 0, 0.8, 0)
@@ -108,7 +107,7 @@ local function createGUI()
     MinimizeKeyBox.Text = "R"
     MinimizeKeyBox.ClearTextOnFocus = false
     MinimizeKeyBox.Parent = TitleBar
-
+    
     local PlayerSearchBox = Instance.new("TextBox")
     PlayerSearchBox.Name = "PlayerSearchBox"
     PlayerSearchBox.Size = UDim2.new(0.7, 0, 0, 30)
@@ -118,7 +117,7 @@ local function createGUI()
     PlayerSearchBox.PlaceholderText = "Digite o nome do jogador..."
     PlayerSearchBox.ClearTextOnFocus = false
     PlayerSearchBox.Parent = MainFrame
-
+    
     local TrackClosestButton = Instance.new("TextButton")
     TrackClosestButton.Name = "TrackClosest"
     TrackClosestButton.Size = UDim2.new(0.25, 0, 0, 30)
@@ -127,15 +126,22 @@ local function createGUI()
     TrackClosestButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     TrackClosestButton.Text = "Rastrear a pessoa próxima"
     TrackClosestButton.Parent = MainFrame
-
-    TrackClosestButton.MouseEnter:Connect(function() TrackClosestButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70) end)
-    TrackClosestButton.MouseLeave:Connect(function() TrackClosestButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end)
-
+    
+    TrackClosestButton.MouseEnter:Connect(function()
+        TrackClosestButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    end)
+    
+    TrackClosestButton.MouseLeave:Connect(function()
+        TrackClosestButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end)
+    
     TrackClosestButton.MouseButton1Click:Connect(function()
         local closest = nil
         local shortest = math.huge
+        
         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local root = player.Character.HumanoidRootPart.Position
+            
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                     local dist = (root - p.Character.HumanoidRootPart.Position).Magnitude
@@ -146,11 +152,12 @@ local function createGUI()
                 end
             end
         end
+        
         if closest then
             PlayerSearchBox.Text = closest.Name
         end
     end)
-
+    
     local PlayerExamples = Instance.new("TextLabel")
     PlayerExamples.Name = "PlayerExamples"
     PlayerExamples.Size = UDim2.new(0.9, 0, 0, 20)
@@ -162,7 +169,7 @@ local function createGUI()
     PlayerExamples.Font = Enum.Font.SourceSans
     PlayerExamples.TextSize = 14
     PlayerExamples.Parent = MainFrame
-
+    
     -- =======================
     -- VARIÁVEIS E CONFIGS
     -- =======================
@@ -176,43 +183,55 @@ local function createGUI()
     local loopTPConnection = nil
     local highlights = {}
     local minimizeKey = "R"
-
+    
+    -- >>> NOVAS VARIÁVEIS: Freeze Mode e Egor Mode
+    local freezeModeEnabled = false
+    local egorModeEnabled = false
+    local originalWalkSpeed = 16
+    local originalAnimations = {}
+    local egorSpeedMultiplier = 3.5
+    local humanoidMoveConnection = nil
+    local humanoid = nil
+    
     -- >>> NOVA VARIÁVEL: distância de TP (studs)
     local tpDistanceStuds = 2
-
+    
     -- =======================
     -- FUNÇÕES
     -- =======================
     local function createESP(targetPlayer)
         if not targetPlayer.Character then return end
         if highlights[targetPlayer] then return end
+        
         local highlight = Instance.new("Highlight")
         highlight.Adornee = targetPlayer.Character
         highlight.FillColor = Color3.fromRGB(0,255,0)
         highlight.FillTransparency = 0.5
         highlight.OutlineTransparency = 0
         highlight.Parent = workspace
+        
         highlights[targetPlayer] = highlight
     end
-
+    
     local function removeESP(targetPlayer)
         if highlights[targetPlayer] then
             highlights[targetPlayer]:Destroy()
             highlights[targetPlayer] = nil
         end
     end
-
+    
     local function clearAllESP()
         for p,h in pairs(highlights) do
             h:Destroy()
         end
         highlights = {}
     end
-
+    
     local function updatePlayerExamples()
         local exampleText = "Exemplos: "
         local players = Players:GetPlayers()
         local count = 0
+        
         for _, p in ipairs(players) do
             if p ~= player then
                 count = count + 1
@@ -220,12 +239,96 @@ local function createGUI()
                 if count < 3 then
                     exampleText = exampleText .. ", "
                 end
-                if count >= 3 then break end
+                if count >= 3 then
+                    break
+                end
             end
         end
+        
         PlayerExamples.Text = exampleText
     end
-
+    
+    -- >>> NOVAS FUNÇÕES: Freeze Mode e Egor Mode
+    local function setupHumanoid()
+        if humanoidMoveConnection then
+            humanoidMoveConnection:Disconnect()
+            humanoidMoveConnection = nil
+        end
+        
+        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            originalWalkSpeed = humanoid.WalkSpeed
+            
+            -- Conectar ao evento de movimento para Freeze Mode
+            humanoidMoveConnection = humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+                if freezeModeEnabled and humanoid then
+                    -- Congela o personagem mas mantém a animação
+                    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                end
+            end)
+        end
+    end
+    
+    local function toggleFreezeMode()
+        freezeModeEnabled = not freezeModeEnabled
+        
+        if player.Character and humanoid then
+            if freezeModeEnabled then
+                -- Congela o personagem
+                humanoid.WalkSpeed = 0
+            else
+                -- Restaura a velocidade normal
+                humanoid.WalkSpeed = originalWalkSpeed
+            end
+        end
+        
+        return freezeModeEnabled
+    end
+    
+    local function toggleEgorMode()
+        egorModeEnabled = not egorModeEnabled
+        
+        if player.Character and humanoid then
+            if egorModeEnabled then
+                -- Acelera a animação de andar
+                local animator = humanoid:FindFirstChildOfClass("Animator")
+                if animator then
+                    -- Salvar animações originais
+                    originalAnimations = {}
+                    
+                    -- Acelerar todas as animações em execução
+                    for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+                        originalAnimations[track] = track.Speed
+                        track:AdjustSpeed(egorSpeedMultiplier)
+                    end
+                end
+            else
+                -- Restaurar velocidades normais das animações
+                local animator = humanoid:FindFirstChildOfClass("Animator")
+                if animator then
+                    for track, originalSpeed in pairs(originalAnimations) do
+                        if track then
+                            track:AdjustSpeed(originalSpeed)
+                        end
+                    end
+                    originalAnimations = {}
+                end
+            end
+        end
+        
+        return egorModeEnabled
+    end
+    
+    -- Configurar humanoid quando o personagem spawnar
+    player.CharacterAdded:Connect(function(character)
+        wait(0.5) -- Esperar o humanoid ser criado
+        setupHumanoid()
+    end)
+    
+    if player.Character then
+        setupHumanoid()
+    end
+    
     -- =======================
     -- BOTÕES E INTERAÇÕES
     -- =======================
@@ -237,10 +340,12 @@ local function createGUI()
     NoclipButton.TextColor3 = Color3.fromRGB(255,255,255)
     NoclipButton.Text = "Noclip: OFF"
     NoclipButton.Parent = MainFrame
+    
     NoclipButton.MouseButton1Click:Connect(function()
         noclipEnabled = not noclipEnabled
         NoclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
     end)
+    
     RunService.Stepped:Connect(function()
         if player.Character then
             for _, part in pairs(player.Character:GetChildren()) do
@@ -250,7 +355,7 @@ local function createGUI()
             end
         end
     end)
-
+    
     -- Speed
     local SpeedBox = Instance.new("TextBox")
     SpeedBox.Size = UDim2.new(0.6,0,0,25)
@@ -260,7 +365,7 @@ local function createGUI()
     SpeedBox.PlaceholderText = "Digite a velocidade"
     SpeedBox.ClearTextOnFocus = false
     SpeedBox.Parent = MainFrame
-
+    
     local SpeedButton = Instance.new("TextButton")
     SpeedButton.Size = UDim2.new(0.3,0,0,25)
     SpeedButton.Position = UDim2.new(0.7,0,0,130)
@@ -268,16 +373,18 @@ local function createGUI()
     SpeedButton.TextColor3 = Color3.fromRGB(255,255,255)
     SpeedButton.Text = "Set"
     SpeedButton.Parent = MainFrame
+    
     SpeedButton.MouseButton1Click:Connect(function()
         local val = tonumber(SpeedBox.Text)
         if val then
             speedValue = val
             if player.Character and player.Character:FindFirstChild("Humanoid") then
                 player.Character.Humanoid.WalkSpeed = speedValue
+                originalWalkSpeed = speedValue
             end
         end
     end)
-
+    
     -- Teleport Spawn
     local TeleportSpawnButton = Instance.new("TextButton")
     TeleportSpawnButton.Size = UDim2.new(0.9,0,0,25)
@@ -286,12 +393,13 @@ local function createGUI()
     TeleportSpawnButton.TextColor3 = Color3.fromRGB(255,255,255)
     TeleportSpawnButton.Text = "Teleport to Spawn"
     TeleportSpawnButton.Parent = MainFrame
+    
     TeleportSpawnButton.MouseButton1Click:Connect(function()
         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             player.Character.HumanoidRootPart.CFrame = CFrame.new(195.37,61.25,-107.25)
         end
     end)
-
+    
     -- ESP, Spectate, Loop TP, TeleportToPlayer
     local buttons = {
         {Name="ToggleSpectate", Text="Spectate Player", YPos=190, Visible=false},
@@ -300,7 +408,7 @@ local function createGUI()
         {Name="ToggleLoopTP", Text="Loop Teleport", YPos=280, Visible=false},
         {Name="TeleportToPlayer", Text="Teleport to Player", YPos=310, Visible=false}
     }
-
+    
     for _, btnData in pairs(buttons) do
         local btn = Instance.new("TextButton")
         btn.Name = btnData.Name
@@ -311,26 +419,31 @@ local function createGUI()
         btn.Text = btnData.Text
         btn.Visible = btnData.Visible
         btn.Parent = MainFrame
-
+        
         btn.MouseButton1Click:Connect(function()
             if btnData.Name=="ToggleESP" then
                 if not currentTarget then return end
                 espEnabled = not espEnabled
-                if espEnabled then createESP(currentTarget) btn.Text="ESP: ON"
-                else removeESP(currentTarget) btn.Text="ESP Player" end
-
+                if espEnabled then
+                    createESP(currentTarget)
+                    btn.Text="ESP: ON"
+                else
+                    removeESP(currentTarget)
+                    btn.Text="ESP Player"
+                end
             elseif btnData.Name=="ToggleAllESP" then
                 allEspEnabled = not allEspEnabled
                 if allEspEnabled then
                     for _, p in pairs(Players:GetPlayers()) do
-                        if p~=player then createESP(p) end
+                        if p~=player then
+                            createESP(p)
+                        end
                     end
                     btn.Text="ESP All: ON"
                 else
                     clearAllESP()
                     btn.Text="ESP All Players"
                 end
-
             elseif btnData.Name=="ToggleSpectate" then
                 if not currentTarget then return end
                 spectateEnabled = not spectateEnabled
@@ -341,7 +454,6 @@ local function createGUI()
                     camera.CameraSubject=player.Character:FindFirstChild("Humanoid")
                     btn.Text="Spectate Player"
                 end
-
             elseif btnData.Name=="TeleportToPlayer" then
                 if currentTarget and currentTarget.Character and player.Character then
                     local rootPart=player.Character:FindFirstChild("HumanoidRootPart")
@@ -351,7 +463,6 @@ local function createGUI()
                         rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,tpDistanceStuds)
                     end
                 end
-
             elseif btnData.Name=="ToggleLoopTP" then
                 loopTPEnabled = not loopTPEnabled
                 if loopTPEnabled then
@@ -368,25 +479,54 @@ local function createGUI()
                     end)
                 else
                     btn.Text="Loop Teleport"
-                    if loopTPConnection then loopTPConnection:Disconnect() end
+                    if loopTPConnection then
+                        loopTPConnection:Disconnect()
+                    end
                 end
             end
         end)
     end
-
+    
+    -- >>> NOVO BOTÃO: Freeze Mode
+    local FreezeModeButton = Instance.new("TextButton")
+    FreezeModeButton.Size = UDim2.new(0.9, 0, 0, 25)
+    FreezeModeButton.Position = UDim2.new(0.05, 0, 0, 340)
+    FreezeModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    FreezeModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FreezeModeButton.Text = "Freeze Mode: OFF"
+    FreezeModeButton.Parent = MainFrame
+    
+    FreezeModeButton.MouseButton1Click:Connect(function()
+        local enabled = toggleFreezeMode()
+        FreezeModeButton.Text = "Freeze Mode: " .. (enabled and "ON" or "OFF")
+    end)
+    
+    -- >>> NOVO BOTÃO: Egor Mode
+    local EgorModeButton = Instance.new("TextButton")
+    EgorModeButton.Size = UDim2.new(0.9, 0, 0, 25)
+    EgorModeButton.Position = UDim2.new(0.05, 0, 0, 370)
+    EgorModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    EgorModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    EgorModeButton.Text = "Egor Mode: OFF"
+    EgorModeButton.Parent = MainFrame
+    
+    EgorModeButton.MouseButton1Click:Connect(function()
+        local enabled = toggleEgorMode()
+        EgorModeButton.Text = "Egor Mode: " .. (enabled and "ON" or "OFF")
+    end)
+    
     -- >>> NOVA TEXTBOX: Distância de TP (studs)
-    -- Mantendo a GUI original e adicionando abaixo dos outros botões sem deslocar os existentes.
     local TPDistanceBox = Instance.new("TextBox")
     TPDistanceBox.Name = "TPDistanceBox"
     TPDistanceBox.Size = UDim2.new(0.9, 0, 0, 25)
-    TPDistanceBox.Position = UDim2.new(0.05, 0, 0, 340)
+    TPDistanceBox.Position = UDim2.new(0.05, 0, 0, 400)
     TPDistanceBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     TPDistanceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     TPDistanceBox.PlaceholderText = "Distância TP (studs) | padrão: 2"
     TPDistanceBox.Text = tostring(tpDistanceStuds)
     TPDistanceBox.ClearTextOnFocus = false
     TPDistanceBox.Parent = MainFrame
-
+    
     TPDistanceBox.FocusLost:Connect(function(enterPressed)
         if enterPressed then
             local n = tonumber(TPDistanceBox.Text)
@@ -398,7 +538,31 @@ local function createGUI()
             end
         end
     end)
-
+    
+    -- >>> NOVA TEXTBOX: Multiplicador de velocidade Egor Mode
+    local EgorSpeedBox = Instance.new("TextBox")
+    EgorSpeedBox.Name = "EgorSpeedBox"
+    EgorSpeedBox.Size = UDim2.new(0.9, 0, 0, 25)
+    EgorSpeedBox.Position = UDim2.new(0.05, 0, 0, 430)
+    EgorSpeedBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    EgorSpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    EgorSpeedBox.PlaceholderText = "Multiplicador Egor Mode | padrão: 3.5"
+    EgorSpeedBox.Text = tostring(egorSpeedMultiplier)
+    EgorSpeedBox.ClearTextOnFocus = false
+    EgorSpeedBox.Parent = MainFrame
+    
+    EgorSpeedBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local n = tonumber(EgorSpeedBox.Text)
+            if n and n >= 1 and n <= 10 then
+                egorSpeedMultiplier = n
+            else
+                egorSpeedMultiplier = 3.5
+                EgorSpeedBox.Text = "3.5"
+            end
+        end
+    end)
+    
     -- Atualiza target ao digitar nome
     PlayerSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         currentTarget=nil
@@ -411,11 +575,12 @@ local function createGUI()
                 end
             end
         end
+        
         for _, btnName in pairs({"ToggleSpectate","ToggleESP","ToggleLoopTP","TeleportToPlayer"}) do
             MainFrame[btnName].Visible=currentTarget~=nil
         end
     end)
-
+    
     -- Minimizar GUI
     MinimizeKeyBox:GetPropertyChangedSignal("Text"):Connect(function()
         if #MinimizeKeyBox.Text>0 then
@@ -424,13 +589,13 @@ local function createGUI()
             MinimizeKeyBox.Text=key
         end
     end)
-
+    
     UserInputService.InputBegan:Connect(function(input,gameProcessed)
         if not gameProcessed and input.KeyCode==Enum.KeyCode[minimizeKey] then
             MainFrame.Visible = not MainFrame.Visible
         end
     end)
-
+    
     updatePlayerExamples()
     Players.PlayerAdded:Connect(updatePlayerExamples)
     Players.PlayerRemoving:Connect(updatePlayerExamples)
