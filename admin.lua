@@ -74,6 +74,129 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Mingua
 	{Name = "steve", Script = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Emerson2-creator/Scripts-Roblox/refs/heads/main/ScriptR6/AnimGuiV2.lua"))()
 		end},
+{Name = "steve", Script = function()
+-- LocalScript em StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+
+local timeStopped = false
+local originalAnchored = {}
+local pausedAnimations = {}
+local storedScripts = {}
+
+-- Criar efeito preto e branco
+local bwEffect = Instance.new("ColorCorrectionEffect")
+bwEffect.Name = "TimeStopBW"
+bwEffect.Saturation = -1
+bwEffect.Contrast = 0.1
+bwEffect.Brightness = -0.05
+bwEffect.Enabled = false
+bwEffect.Parent = Lighting
+
+-- Função para desativar todos scripts existentes
+local function disableScripts()
+	for _, obj in ipairs(game:GetDescendants()) do
+		if (obj:IsA("Script") or obj:IsA("LocalScript")) and obj ~= script then
+			if obj.Enabled then
+				storedScripts[obj] = true
+				obj.Enabled = false
+			end
+		end
+	end
+end
+
+-- Restaurar scripts desativados
+local function restoreScripts()
+	for obj in pairs(storedScripts) do
+		if obj and obj.Parent then
+			obj.Enabled = true
+		end
+	end
+	storedScripts = {}
+end
+
+-- Deletar sons do ambiente e VFX existentes
+local function removeEnvSoundsAndVFX()
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("Sound") then
+			-- Apenas destruir se não estiver dentro de um personagem
+			if not obj:IsDescendantOf(Players) then
+				obj:Destroy()
+			end
+		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+			obj:Destroy()
+		end
+	end
+end
+
+-- Ativar Time Stop
+local function activateTimeStop()
+	timeStopped = true
+	bwEffect.Enabled = true
+
+	-- Ancorar todas as partes (menos o jogador)
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and not obj:IsDescendantOf(LocalPlayer.Character) then
+			originalAnchored[obj] = obj.Anchored
+			obj.Anchored = true
+		end
+	end
+
+	-- Pausar animações dos outros jogadores
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") then
+			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+			for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+				track:Stop()
+				pausedAnimations[track] = true
+			end
+		end
+	end
+
+	-- Deletar sons do ambiente e VFX
+	removeEnvSoundsAndVFX()
+
+	-- Desativar scripts existentes
+	disableScripts()
+end
+
+-- Desativar Time Stop
+local function deactivateTimeStop()
+	timeStopped = false
+	bwEffect.Enabled = false
+
+	-- Restaurar partes
+	for obj, wasAnchored in pairs(originalAnchored) do
+		if obj and obj:IsA("BasePart") then
+			obj.Anchored = wasAnchored
+		end
+	end
+	originalAnchored = {}
+
+	-- Liberar animações (não reinicia automaticamente)
+	pausedAnimations = {}
+
+	-- Restaurar scripts
+	restoreScripts()
+end
+
+-- Input para alternar Time Stop
+UIS.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.F then
+		if not timeStopped then
+			activateTimeStop()
+		else
+			deactivateTimeStop()
+		end
+	end
+end)
+
+		end},
+	
 }
 
 -- Criar GUI
