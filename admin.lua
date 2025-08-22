@@ -74,7 +74,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Kauahercules11/Mingua
 	{Name = "steve", Script = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Emerson2-creator/Scripts-Roblox/refs/heads/main/ScriptR6/AnimGuiV2.lua"))()
 		end},
-{Name = "steve", Script = function()
+{Name = "stop", Script = function()
 -- LocalScript em StarterPlayerScripts
 
 local Players = game:GetService("Players")
