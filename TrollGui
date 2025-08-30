@@ -70,8 +70,8 @@ local function createGUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 490)
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -245)
+    MainFrame.Size = UDim2.new(0, 320, 0, 550) -- Aumentado para acomodar o novo sistema
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -275)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
     MainFrame.Draggable = true
@@ -156,7 +156,7 @@ local function createGUI()
         if closest then
             PlayerSearchBox.Text = closest.Name
         end
-    end)
+        end)
     
     local PlayerExamples = Instance.new("TextLabel")
     PlayerExamples.Name = "PlayerExamples"
@@ -253,6 +253,34 @@ local function createGUI()
         end
         
         PlayerExamples.Text = exampleText
+    end
+    
+    -- >>> FUNÇÃO PARA ANALISAR COORDENADAS
+    local function parseCoordinates(text)
+        -- Remove espaços e quebras de linha
+        text = text:gsub("%s+", "")
+        
+        -- Verifica se está no formato X,Y,Z
+        local x, y, z = text:match("^([%d%.%-]+),([%d%.%-]+),([%d%.%-]+)$")
+        if x and y and z then
+            return Vector3.new(tonumber(x), tonumber(y), tonumber(z))
+        end
+        
+        -- Verifica se está no formato CFrame.new(X, Y, Z)
+        local cframeMatch = text:match("CFrame%.new%(([%d%.%-]+),([%d%.%-]+),([%d%.%-]+)%)")
+        if cframeMatch then
+            local x, y, z = text:match("CFrame%.new%(([%d%.%-]+),([%d%.%-]+),([%d%.%-]+)%)")
+            return Vector3.new(tonumber(x), tonumber(y), tonumber(z))
+        end
+        
+        -- Verifica se está no formato {X, Y, Z}
+        local vectorMatch = text:match("{%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*}")
+        if vectorMatch then
+            local x, y, z = text:match("{%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*}")
+            return Vector3.new(tonumber(x), tonumber(y), tonumber(z))
+        end
+        
+        return nil
     end
     
     -- >>> NOVAS FUNÇÕES: Freeze Mode e Egor Mode
@@ -650,11 +678,56 @@ local function createGUI()
         EgorModeButton.Text = "Egor Mode: " .. (enabled and "ON" or "OFF")
     end)
     
+    -- >>> NOVO SISTEMA: Teleporte por Coordenadas
+    local PositionTextBox = Instance.new("TextBox")
+    PositionTextBox.Name = "PositionTextBox"
+    PositionTextBox.Size = UDim2.new(0.9, 0, 0, 25)
+    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 400)
+    PositionTextBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    PositionTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PositionTextBox.PlaceholderText = "Digite as coordenadas (X,Y,Z) ou CFrame"
+    PositionTextBox.ClearTextOnFocus = false
+    PositionTextBox.Parent = MainFrame
+    
+    local TeleportToPositionButton = Instance.new("TextButton")
+    TeleportToPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
+    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 430)
+    TeleportToPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    TeleportToPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TeleportToPositionButton.Text = "Teleportar á posição citada"
+    TeleportToPositionButton.Parent = MainFrame
+    
+    TeleportToPositionButton.MouseButton1Click:Connect(function()
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local position = parseCoordinates(PositionTextBox.Text)
+            if position then
+                player.Character.HumanoidRootPart.CFrame = CFrame.new(position)
+            else
+                PositionTextBox.Text = "Formato inválido! Use X,Y,Z"
+            end
+        end
+    end)
+    
+    local GetCurrentPositionButton = Instance.new("TextButton")
+    GetCurrentPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
+    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 460)
+    GetCurrentPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    GetCurrentPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    GetCurrentPositionButton.Text = "Pegar posição atual"
+    GetCurrentPositionButton.Parent = MainFrame
+    
+    GetCurrentPositionButton.MouseButton1Click:Connect(function()
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local position = player.Character.HumanoidRootPart.Position
+            PositionTextBox.Text = string.format("%.2f, %.2f, %.2f", position.X, position.Y, position.Z)
+        end
+    end)
+    
     -- >>> NOVA TEXTBOX: Distância de TP (studs)
     local TPDistanceBox = Instance.new("TextBox")
     TPDistanceBox.Name = "TPDistanceBox"
     TPDistanceBox.Size = UDim2.new(0.9, 0, 0, 25)
-    TPDistanceBox.Position = UDim2.new(0.05, 0, 0, 400)
+    TPDistanceBox.Position = UDim2.new(0.05, 0, 0, 490)
     TPDistanceBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     TPDistanceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     TPDistanceBox.PlaceholderText = "Distância TP (studs) | padrão: 2"
@@ -678,7 +751,7 @@ local function createGUI()
     local EgorSpeedBox = Instance.new("TextBox")
     EgorSpeedBox.Name = "EgorSpeedBox"
     EgorSpeedBox.Size = UDim2.new(0.9, 0, 0, 25)
-    EgorSpeedBox.Position = UDim2.new(0.05, 0, 0, 430)
+    EgorSpeedBox.Position = UDim2.new(0.05, 0, 0, 520)
     EgorSpeedBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     EgorSpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     EgorSpeedBox.PlaceholderText = "Multiplicador Egor Mode | padrão: 3.5"
