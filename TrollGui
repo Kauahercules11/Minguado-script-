@@ -70,7 +70,7 @@ local function createGUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 550)
+    MainFrame.Size = UDim2.new(0, 320, 0, 550) -- Aumentado para acomodar o novo sistema
     MainFrame.Position = UDim2.new(0.5, -160, 0.5, -275)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
@@ -87,7 +87,7 @@ local function createGUI()
     
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
-    Title.Size = UDim2.new(0.4, 0, 1, 0)
+    Title.Size = UDim2.new(0.6, 0, 1, 0)
     Title.Position = UDim2.new(0, 5, 0, 0)
     Title.BackgroundTransparency = 1
     Title.Text = "TrollGui"
@@ -96,42 +96,6 @@ local function createGUI()
     Title.TextSize = 18
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleBar
-    
-    -- >>> NOVO: Nome da Experiência
-    local GameNameLabel = Instance.new("TextLabel")
-    GameNameLabel.Name = "GameNameLabel"
-    GameNameLabel.Size = UDim2.new(0.4, 0, 1, 0)
-    GameNameLabel.Position = UDim2.new(0.4, 0, 0, 0)
-    GameNameLabel.BackgroundTransparency = 1
-    GameNameLabel.Text = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
-    GameNameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    GameNameLabel.Font = Enum.Font.SourceSans
-    GameNameLabel.TextSize = 14
-    GameNameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    GameNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    GameNameLabel.Parent = TitleBar
-    
-    -- >>> NOVO: TextBox com ID da Place (somente leitura)
-    local PlaceIdBox = Instance.new("TextBox")
-    PlaceIdBox.Name = "PlaceIdBox"
-    PlaceIdBox.Size = UDim2.new(0.2, 0, 0.8, 0)
-    PlaceIdBox.Position = UDim2.new(0.8, 0, 0.1, 0)
-    PlaceIdBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    PlaceIdBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    PlaceIdBox.Text = tostring(game.PlaceId)
-    PlaceIdBox.ClearTextOnFocus = false
-    PlaceIdBox.Parent = TitleBar
-    
-    -- Tornar a TextBox somente leitura
-    PlaceIdBox.FocusLost:Connect(function()
-        PlaceIdBox.Text = tostring(game.PlaceId)
-    end)
-    
-    PlaceIdBox:GetPropertyChangedSignal("Text"):Connect(function()
-        if PlaceIdBox.Text ~= tostring(game.PlaceId) then
-            PlaceIdBox.Text = tostring(game.PlaceId)
-        end
-    end)
     
     local MinimizeKeyBox = Instance.new("TextBox")
     MinimizeKeyBox.Name = "MinimizeKeyBox"
@@ -529,7 +493,7 @@ local function createGUI()
     end
     
     -- =======================
-    -- BOTÃO E INTERAÇÕES
+    -- BOTÕES E INTERAÇÕES
     -- =======================
     -- Noclip
     local NoclipButton = Instance.new("TextButton")
