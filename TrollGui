@@ -75,8 +75,8 @@ local function createGUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 610) -- Aumentado para acomodar o novo botão
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -305)
+    MainFrame.Size = UDim2.new(0, 320, 0, 550) -- Aumentado para acomodar o novo sistema
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -275)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
     MainFrame.Draggable = true
@@ -179,13 +179,6 @@ local function createGUI()
         if closest then
             PlayerSearchBox.Text = closest.Name
             trackedPlayer = closest
-            
-            -- Notificar que o jogador foi encontrado
-            game:GetService("StarterGui"):SetCore("SendNotification",{
-                Title = "TrollGui",
-                Text = "Jogador " .. closest.Name .. " encontrado",
-                Icon = "rbxassetid://"
-            })
         end
     end)
     
@@ -214,9 +207,6 @@ local function createGUI()
     local loopTPConnection = nil
     local highlights = {}
     local minimizeKey = "R"
-    local hitboxEnabled = false
-    local hitboxConnection = nil
-    local hitboxRange = 50 -- Alcance adicional em studs
     
     -- >>> NOVAS VARIÁVEIS: Freeze Mode e Egor Mode
     local freezeModeEnabled = false
@@ -287,59 +277,6 @@ local function createGUI()
         end
         
         PlayerExamples.Text = exampleText
-    end
-    
-    -- >>> FUNÇÃO PARA AUMENTAR ALCANCE DE ATAQUES
-    local function toggleHitbox()
-        hitboxEnabled = not hitboxEnabled
-        
-        if hitboxConnection then
-            hitboxConnection:Disconnect()
-            hitboxConnection = nil
-        end
-        
-        if hitboxEnabled then
-            hitboxConnection = RunService.Heartbeat:Connect(function()
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local playerRoot = player.Character.HumanoidRootPart
-                    
-                    -- Verificar todos os outros jogadores
-                    for _, otherPlayer in pairs(Players:GetPlayers()) do
-                        if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                            local targetRoot = otherPlayer.Character.HumanoidRootPart
-                            local distance = (playerRoot.Position - targetRoot.Position).Magnitude
-                            
-                            -- Se o jogador estiver dentro do alcance aumentado
-                            if distance <= hitboxRange then
-                                -- Simular um ataque (este é um exemplo genérico)
-                                -- Em jogos específicos, você precisaria adaptar esta parte
-                                -- para o sistema de combate do jogo
-                                
-                                -- Exemplo: Criar uma partícula visual para indicar o hit
-                                if not workspace:FindFirstChild("HitboxIndicator_" .. otherPlayer.Name) then
-                                    local highlight = Instance.new("Highlight")
-                                    highlight.Name = "HitboxIndicator_" .. otherPlayer.Name
-                                    highlight.Adornee = otherPlayer.Character
-                                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                                    highlight.FillTransparency = 0.7
-                                    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-                                    highlight.Parent = workspace
-                                    
-                                    -- Remover após um tempo
-                                    game:GetService("Debris"):AddItem(highlight, 0.5)
-                                end
-                                
-                                -- Aqui você pode adicionar lógica específica do jogo
-                                -- como causar dano, aplicar efeitos, etc.
-                                -- Isso varia dependendo do jogo específico
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-        
-        return hitboxEnabled
     end
     
     -- >>> FUNÇÃO PARA ANALISAR COORDENADAS
@@ -650,51 +587,13 @@ local function createGUI()
         end
     end)
     
-    -- >>> NOVO BOTÃO: Aumentar Hitbox (Alcance)
-    local HitboxButton = Instance.new("TextButton")
-    HitboxButton.Size = UDim2.new(0.9, 0, 0, 25)
-    HitboxButton.Position = UDim2.new(0.05, 0, 0, 190)
-    HitboxButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    HitboxButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HitboxButton.Text = "Aumentar Alcance: OFF"
-    HitboxButton.Parent = MainFrame
-    
-    HitboxButton.MouseButton1Click:Connect(function()
-        local enabled = toggleHitbox()
-        HitboxButton.Text = "Aumentar Alcance: " .. (enabled and "ON" or "OFF")
-    end)
-    
-    -- >>> NOVA TEXTBOX: Alcance de Hitbox
-    local HitboxRangeBox = Instance.new("TextBox")
-    HitboxRangeBox.Name = "HitboxRangeBox"
-    HitboxRangeBox.Size = UDim2.new(0.9, 0, 0, 25)
-    HitboxRangeBox.Position = UDim2.new(0.05, 0, 0, 220)
-    HitboxRangeBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    HitboxRangeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HitboxRangeBox.PlaceholderText = "Alcance (studs) | padrão: 50"
-    HitboxRangeBox.Text = tostring(hitboxRange)
-    HitboxRangeBox.ClearTextOnFocus = false
-    HitboxRangeBox.Parent = MainFrame
-    
-    HitboxRangeBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            local n = tonumber(HitboxRangeBox.Text)
-            if n and n >= 1 and n <= 1000 then
-                hitboxRange = n
-            else
-                hitboxRange = 50
-                HitboxRangeBox.Text = "50"
-            end
-        end
-    end)
-    
     -- ESP, Spectate, Loop TP, TeleportToPlayer
     local buttons = {
-        {Name="ToggleSpectate", Text="Spectate Player", YPos=250, Visible=false},
-        {Name="ToggleESP", Text="ESP Player", YPos=280, Visible=false},
-        {Name="ToggleAllESP", Text="ESP All Players", YPos=310, Visible=true},
-        {Name="ToggleLoopTP", Text="Loop Teleport", YPos=340, Visible=false},
-        {Name="TeleportToPlayer", Text="Teleport to Player", YPos=370, Visible=false}
+        {Name="ToggleSpectate", Text="Spectate Player", YPos=190, Visible=false},
+        {Name="ToggleESP", Text="ESP Player", YPos=220, Visible=false},
+        {Name="ToggleAllESP", Text="ESP All Players", YPos=250, Visible=true},
+        {Name="ToggleLoopTP", Text="Loop Teleport", YPos=280, Visible=false},
+        {Name="TeleportToPlayer", Text="Teleport to Player", YPos=310, Visible=false}
     }
     
     for _, btnData in pairs(buttons) do
@@ -778,7 +677,7 @@ local function createGUI()
     -- >>> NOVO BOTÃO: Freeze Mode
     local FreezeModeButton = Instance.new("TextButton")
     FreezeModeButton.Size = UDim2.new(0.9, 0, 0, 25)
-    FreezeModeButton.Position = UDim2.new(0.05, 0, 0, 400)
+    FreezeModeButton.Position = UDim2.new(0.05, 0, 0, 340)
     FreezeModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     FreezeModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     FreezeModeButton.Text = "Freeze Mode: OFF"
@@ -792,7 +691,7 @@ local function createGUI()
     -- >>> NOVO BOTÃO: Egor Mode
     local EgorModeButton = Instance.new("TextButton")
     EgorModeButton.Size = UDim2.new(0.9, 0, 0, 25)
-    EgorModeButton.Position = UDim2.new(0.05, 0, 0, 430)
+    EgorModeButton.Position = UDim2.new(0.05, 0, 0, 370)
     EgorModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     EgorModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     EgorModeButton.Text = "Egor Mode: OFF"
@@ -807,7 +706,7 @@ local function createGUI()
     local PositionTextBox = Instance.new("TextBox")
     PositionTextBox.Name = "PositionTextBox"
     PositionTextBox.Size = UDim2.new(0.9, 0, 0, 25)
-    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 460)
+    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 400)
     PositionTextBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     PositionTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     PositionTextBox.PlaceholderText = "Digite as coordenadas (X,Y,Z) ou CFrame"
@@ -816,7 +715,7 @@ local function createGUI()
     
     local TeleportToPositionButton = Instance.new("TextButton")
     TeleportToPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
-    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 490)
+    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 430)
     TeleportToPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     TeleportToPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     TeleportToPositionButton.Text = "Teleportar á posição citada"
@@ -835,7 +734,7 @@ local function createGUI()
     
     local GetCurrentPositionButton = Instance.new("TextButton")
     GetCurrentPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
-    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 520)
+    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 460)
     GetCurrentPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     GetCurrentPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     GetCurrentPositionButton.Text = "Pegar posição atual"
@@ -852,7 +751,7 @@ local function createGUI()
     local TPDistanceBox = Instance.new("TextBox")
     TPDistanceBox.Name = "TPDistanceBox"
     TPDistanceBox.Size = UDim2.new(0.9, 0, 0, 25)
-    TPDistanceBox.Position = UDim2.new(0.05, 0, 0, 550)
+    TPDistanceBox.Position = UDim2.new(0.05, 0, 0, 490)
     TPDistanceBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     TPDistanceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     TPDistanceBox.PlaceholderText = "Distância TP (studs) | padrão: 2"
@@ -876,7 +775,7 @@ local function createGUI()
     local EgorSpeedBox = Instance.new("TextBox")
     EgorSpeedBox.Name = "EgorSpeedBox"
     EgorSpeedBox.Size = UDim2.new(0.9, 0, 0, 25)
-    EgorSpeedBox.Position = UDim2.new(0.05, 0, 0, 580)
+    EgorSpeedBox.Position = UDim2.new(0.05, 0, 0, 520)
     EgorSpeedBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     EgorSpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     EgorSpeedBox.PlaceholderText = "Multiplicador Egor Mode | padrão: 3.5"
@@ -912,14 +811,6 @@ local function createGUI()
                 if string.lower(p.Name):find(text)==1 or (p.DisplayName and string.lower(p.DisplayName):find(text)==1) then
                     currentTarget=p
                     trackedPlayer = p -- Atualiza o jogador sendo rastreado
-                    
-                    -- Notificar que o jogador foi encontrado
-                    game:GetService("StarterGui"):SetCore("SendNotification",{
-                        Title = "TrollGui",
-                        Text = "Jogador " .. p.Name .. " encontrado",
-                        Icon = "rbxassetid://"
-                    })
-                    
                     break
                 end
             end
