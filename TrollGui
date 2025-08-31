@@ -123,6 +123,24 @@ local function createGUI()
     PlayerSearchBox.ClearTextOnFocus = false
     PlayerSearchBox.Parent = MainFrame
     
+    -- Variável para armazenar o jogador sendo rastreado
+    local trackedPlayer = nil
+    
+    -- Função para notificar quando o jogador sair
+    local function onTrackedPlayerLeaving(leftPlayer)
+        if trackedPlayer and leftPlayer == trackedPlayer then
+            game:GetService("StarterGui"):SetCore("SendNotification",{
+                Title = "TrollGui",
+                Text = "O " .. trackedPlayer.Name .. " saiu!!",
+                Icon = "rbxassetid://"
+            })
+            trackedPlayer = nil
+        end
+    end
+    
+    -- Conectar ao evento de jogador saindo
+    Players.PlayerRemoving:Connect(onTrackedPlayerLeaving)
+    
     local TrackClosestButton = Instance.new("TextButton")
     TrackClosestButton.Name = "TrackClosest"
     TrackClosestButton.Size = UDim2.new(0.25, 0, 0, 30)
@@ -160,8 +178,9 @@ local function createGUI()
         
         if closest then
             PlayerSearchBox.Text = closest.Name
+            trackedPlayer = closest
         end
-        end)
+    end)
     
     local PlayerExamples = Instance.new("TextLabel")
     PlayerExamples.Name = "PlayerExamples"
@@ -791,6 +810,7 @@ local function createGUI()
             for _,p in pairs(Players:GetPlayers()) do
                 if string.lower(p.Name):find(text)==1 or (p.DisplayName and string.lower(p.DisplayName):find(text)==1) then
                     currentTarget=p
+                    trackedPlayer = p -- Atualiza o jogador sendo rastreado
                     break
                 end
             end
