@@ -75,8 +75,8 @@ local function createGUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 550) -- Aumentado para acomodar o novo sistema
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -275)
+    MainFrame.Size = UDim2.new(0, 320, 0, 600) -- Aumentado para caber a nova seção
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -300)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
     MainFrame.Draggable = true
@@ -113,16 +113,78 @@ local function createGUI()
     MinimizeKeyBox.ClearTextOnFocus = false
     MinimizeKeyBox.Parent = TitleBar
     
+    -- =============================================
+    -- NOVA SEÇÃO: EXIBIÇÃO DO JOGADOR CITADO
+    -- =============================================
+    local PlayerDisplayFrame = Instance.new("Frame")
+    PlayerDisplayFrame.Name = "PlayerDisplayFrame"
+    PlayerDisplayFrame.Size = UDim2.new(0.9, 0, 0, 100)
+    PlayerDisplayFrame.Position = UDim2.new(0.05, 0, 0, 40)
+    PlayerDisplayFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    PlayerDisplayFrame.BorderSizePixel = 1
+    PlayerDisplayFrame.BorderColor3 = Color3.fromRGB(80, 80, 80)
+    PlayerDisplayFrame.Parent = MainFrame
+    
+    local PlayerImage = Instance.new("ImageLabel")
+    PlayerImage.Name = "PlayerImage"
+    PlayerImage.Size = UDim2.new(0, 60, 0, 60)
+    PlayerImage.Position = UDim2.new(0.5, -30, 0.15, 0)
+    PlayerImage.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    PlayerImage.BorderSizePixel = 0
+    PlayerImage.Image = "rbxassetid://0" -- Imagem padrão
+    PlayerImage.Parent = PlayerDisplayFrame
+    
+    local PlayerNameLabel = Instance.new("TextLabel")
+    PlayerNameLabel.Name = "PlayerNameLabel"
+    PlayerNameLabel.Size = UDim2.new(0.9, 0, 0, 20)
+    PlayerNameLabel.Position = UDim2.new(0.05, 0, 0.8, 0)
+    PlayerNameLabel.BackgroundTransparency = 1
+    PlayerNameLabel.Text = "Nenhum jogador citado"
+    PlayerNameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    PlayerNameLabel.Font = Enum.Font.SourceSans
+    PlayerNameLabel.TextSize = 14
+    PlayerNameLabel.TextXAlignment = Enum.TextXAlignment.Center
+    PlayerNameLabel.Parent = PlayerDisplayFrame
+    
     local PlayerSearchBox = Instance.new("TextBox")
     PlayerSearchBox.Name = "PlayerSearchBox"
     PlayerSearchBox.Size = UDim2.new(0.7, 0, 0, 30)
-    PlayerSearchBox.Position = UDim2.new(0.05, 0, 0, 40)
+    PlayerSearchBox.Position = UDim2.new(0.05, 0, 0, 150)
     PlayerSearchBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     PlayerSearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     PlayerSearchBox.PlaceholderText = "Digite o nome do jogador..."
     PlayerSearchBox.ClearTextOnFocus = false
     PlayerSearchBox.Parent = MainFrame
     
+    -- Função para atualizar a exibição do jogador
+    local function updatePlayerDisplay(targetPlayer)
+        if targetPlayer then
+            -- Usar pcall para evitar erros ao carregar a imagem
+            pcall(function()
+                local thumbType = Enum.ThumbnailType.HeadShot
+                local thumbSize = Enum.ThumbnailSize.Size420x420
+                
+                -- Obter a thumbnail do jogador
+                local content, isReady = Players:GetUserThumbnailAsync(targetPlayer.UserId, thumbType, thumbSize)
+                
+                if content then
+                    PlayerImage.Image = content
+                else
+                    PlayerImage.Image = "rbxassetid://0" -- Imagem padrão se falhar
+                end
+            end)
+            
+            -- Atualizar nome do jogador
+            PlayerNameLabel.Text = targetPlayer.Name
+            PlayerNameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            -- Resetar para valores padrão
+            PlayerImage.Image = "rbxassetid://0"
+            PlayerNameLabel.Text = "Nenhum jogador citado"
+            PlayerNameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+    end
+
     -- Variável para armazenar o jogador sendo rastreado
     local trackedPlayer = nil
     
@@ -135,6 +197,7 @@ local function createGUI()
                 Icon = "rbxassetid://"
             })
             trackedPlayer = nil
+            updatePlayerDisplay(nil) -- Limpar a exibição
         end
     end
     
@@ -144,7 +207,7 @@ local function createGUI()
     local TrackClosestButton = Instance.new("TextButton")
     TrackClosestButton.Name = "TrackClosest"
     TrackClosestButton.Size = UDim2.new(0.25, 0, 0, 30)
-    TrackClosestButton.Position = UDim2.new(0.76, 0, 0, 40)
+    TrackClosestButton.Position = UDim2.new(0.76, 0, 0, 150)
     TrackClosestButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     TrackClosestButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     TrackClosestButton.Text = "Rastrear a pessoa próxima"
@@ -179,13 +242,14 @@ local function createGUI()
         if closest then
             PlayerSearchBox.Text = closest.Name
             trackedPlayer = closest
+            updatePlayerDisplay(closest) -- Atualizar a exibição
         end
     end)
     
     local PlayerExamples = Instance.new("TextLabel")
     PlayerExamples.Name = "PlayerExamples"
     PlayerExamples.Size = UDim2.new(0.9, 0, 0, 20)
-    PlayerExamples.Position = UDim2.new(0.05, 0, 0, 75)
+    PlayerExamples.Position = UDim2.new(0.05, 0, 0, 185)
     PlayerExamples.BackgroundTransparency = 1
     PlayerExamples.TextColor3 = Color3.fromRGB(180, 180, 180)
     PlayerExamples.Text = "Exemplos: "
@@ -522,7 +586,7 @@ local function createGUI()
     -- Noclip
     local NoclipButton = Instance.new("TextButton")
     NoclipButton.Size = UDim2.new(0.9, 0, 0, 25)
-    NoclipButton.Position = UDim2.new(0.05, 0, 0, 100)
+    NoclipButton.Position = UDim2.new(0.05, 0, 0, 210)
     NoclipButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     NoclipButton.TextColor3 = Color3.fromRGB(255,255,255)
     NoclipButton.Text = "Noclip: OFF"
@@ -546,7 +610,7 @@ local function createGUI()
     -- Speed
     local SpeedBox = Instance.new("TextBox")
     SpeedBox.Size = UDim2.new(0.6,0,0,25)
-    SpeedBox.Position = UDim2.new(0.05,0,0,130)
+    SpeedBox.Position = UDim2.new(0.05,0,0,240)
     SpeedBox.BackgroundColor3 = Color3.fromRGB(60,60,60)
     SpeedBox.TextColor3 = Color3.fromRGB(255,255,255)
     SpeedBox.PlaceholderText = "Digite a velocidade"
@@ -555,7 +619,7 @@ local function createGUI()
     
     local SpeedButton = Instance.new("TextButton")
     SpeedButton.Size = UDim2.new(0.3,0,0,25)
-    SpeedButton.Position = UDim2.new(0.7,0,0,130)
+    SpeedButton.Position = UDim2.new(0.7,0,0,240)
     SpeedButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
     SpeedButton.TextColor3 = Color3.fromRGB(255,255,255)
     SpeedButton.Text = "Set"
@@ -575,7 +639,7 @@ local function createGUI()
     -- Teleport Spawn
     local TeleportSpawnButton = Instance.new("TextButton")
     TeleportSpawnButton.Size = UDim2.new(0.9,0,0,25)
-    TeleportSpawnButton.Position = UDim2.new(0.05,0,0,160)
+    TeleportSpawnButton.Position = UDim2.new(0.05,0,0,270)
     TeleportSpawnButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
     TeleportSpawnButton.TextColor3 = Color3.fromRGB(255,255,255)
     TeleportSpawnButton.Text = "Teleport to Spawn"
@@ -589,11 +653,11 @@ local function createGUI()
     
     -- ESP, Spectate, Loop TP, TeleportToPlayer
     local buttons = {
-        {Name="ToggleSpectate", Text="Spectate Player", YPos=190, Visible=false},
-        {Name="ToggleESP", Text="ESP Player", YPos=220, Visible=false},
-        {Name="ToggleAllESP", Text="ESP All Players", YPos=250, Visible=true},
-        {Name="ToggleLoopTP", Text="Loop Teleport", YPos=280, Visible=false},
-        {Name="TeleportToPlayer", Text="Teleport to Player", YPos=310, Visible=false}
+        {Name="ToggleSpectate", Text="Spectate Player", YPos=300, Visible=false},
+        {Name="ToggleESP", Text="ESP Player", YPos=330, Visible=false},
+        {Name="ToggleAllESP", Text="ESP All Players", YPos=360, Visible=true},
+        {Name="ToggleLoopTP", Text="Loop Teleport", YPos=390, Visible=false},
+        {Name="TeleportToPlayer", Text="Teleport to Player", YPos=420, Visible=false}
     }
     
     for _, btnData in pairs(buttons) do
@@ -677,7 +741,7 @@ local function createGUI()
     -- >>> NOVO BOTÃO: Freeze Mode
     local FreezeModeButton = Instance.new("TextButton")
     FreezeModeButton.Size = UDim2.new(0.9, 0, 0, 25)
-    FreezeModeButton.Position = UDim2.new(0.05, 0, 0, 340)
+    FreezeModeButton.Position = UDim2.new(0.05, 0, 0, 450)
     FreezeModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     FreezeModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     FreezeModeButton.Text = "Freeze Mode: OFF"
@@ -691,7 +755,7 @@ local function createGUI()
     -- >>> NOVO BOTÃO: Egor Mode
     local EgorModeButton = Instance.new("TextButton")
     EgorModeButton.Size = UDim2.new(0.9, 0, 0, 25)
-    EgorModeButton.Position = UDim2.new(0.05, 0, 0, 370)
+    EgorModeButton.Position = UDim2.new(0.05, 0, 0, 480)
     EgorModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     EgorModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     EgorModeButton.Text = "Egor Mode: OFF"
@@ -706,7 +770,7 @@ local function createGUI()
     local PositionTextBox = Instance.new("TextBox")
     PositionTextBox.Name = "PositionTextBox"
     PositionTextBox.Size = UDim2.new(0.9, 0, 0, 25)
-    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 400)
+    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 510)
     PositionTextBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     PositionTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     PositionTextBox.PlaceholderText = "Digite as coordenadas (X,Y,Z) ou CFrame"
@@ -715,7 +779,7 @@ local function createGUI()
     
     local TeleportToPositionButton = Instance.new("TextButton")
     TeleportToPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
-    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 430)
+    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 540)
     TeleportToPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     TeleportToPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     TeleportToPositionButton.Text = "Teleportar á posição citada"
@@ -734,7 +798,7 @@ local function createGUI()
     
     local GetCurrentPositionButton = Instance.new("TextButton")
     GetCurrentPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
-    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 460)
+    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 570)
     GetCurrentPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     GetCurrentPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     GetCurrentPositionButton.Text = "Pegar posição atual"
@@ -747,61 +811,6 @@ local function createGUI()
         end
     end)
     
-    -- >>> NOVA TEXTBOX: Distância de TP (studs)
-    local TPDistanceBox = Instance.new("TextBox")
-    TPDistanceBox.Name = "TPDistanceBox"
-    TPDistanceBox.Size = UDim2.new(0.9, 0, 0, 25)
-    TPDistanceBox.Position = UDim2.new(0.05, 0, 0, 490)
-    TPDistanceBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    TPDistanceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TPDistanceBox.PlaceholderText = "Distância TP (studs) | padrão: 2"
-    TPDistanceBox.Text = tostring(tpDistanceStuds)
-    TPDistanceBox.ClearTextOnFocus = false
-    TPDistanceBox.Parent = MainFrame
-    
-    TPDistanceBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            local n = tonumber(TPDistanceBox.Text)
-            if n and n >= -1000 and n <= 1000 then
-                tpDistanceStuds = n
-            else
-                tpDistanceStuds = 2
-                TPDistanceBox.Text = "2"
-            end
-        end
-    end)
-    
-    -- >>> NOVA TEXTBOX: Multiplicador de velocidade Egor Mode
-    local EgorSpeedBox = Instance.new("TextBox")
-    EgorSpeedBox.Name = "EgorSpeedBox"
-    EgorSpeedBox.Size = UDim2.new(0.9, 0, 0, 25)
-    EgorSpeedBox.Position = UDim2.new(0.05, 0, 0, 520)
-    EgorSpeedBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    EgorSpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    EgorSpeedBox.PlaceholderText = "Multiplicador Egor Mode | padrão: 3.5"
-    EgorSpeedBox.Text = tostring(egorSpeedMultiplier)
-    EgorSpeedBox.ClearTextOnFocus = false
-    EgorSpeedBox.Parent = MainFrame
-    
-    EgorSpeedBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            local n = tonumber(EgorSpeedBox.Text)
-            if n and n >= 1 and n <= 10 then
-                egorSpeedMultiplier = n
-                
-                -- Atualizar imediatamente se Egor Mode estiver ativo
-                if egorModeEnabled and animator then
-                    for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-                        track:AdjustSpeed(egorSpeedMultiplier)
-                    end
-                end
-            else
-                egorSpeedMultiplier = 3.5
-                EgorSpeedBox.Text = "3.5"
-            end
-        end
-    end)
-    
     -- Atualiza target ao digitar nome
     PlayerSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         currentTarget=nil
@@ -811,9 +820,12 @@ local function createGUI()
                 if string.lower(p.Name):find(text)==1 or (p.DisplayName and string.lower(p.DisplayName):find(text)==1) then
                     currentTarget=p
                     trackedPlayer = p -- Atualiza o jogador sendo rastreado
+                    updatePlayerDisplay(p) -- Atualiza a exibição
                     break
                 end
             end
+        else
+            updatePlayerDisplay(nil) -- Limpa a exibição se não há texto
         end
         
         for _, btnName in pairs({"ToggleSpectate","ToggleESP","ToggleLoopTP","TeleportToPlayer"}) do
