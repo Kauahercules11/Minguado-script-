@@ -75,8 +75,8 @@ local function createGUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 600) -- Aumentado para caber a nova seção
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -300)
+    MainFrame.Size = UDim2.new(0, 320, 0, 660) -- Aumentado para caber os novos botões
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -330)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
     MainFrame.Draggable = true
@@ -290,6 +290,12 @@ local function createGUI()
     
     -- >>> NOVA VARIÁVEL: distância de TP (studs)
     local tpDistanceStuds = 2
+    
+    -- >>> NOVAS VARIÁVEIS: Click TP e CFrame Fly
+    local clickTpEnabled = false
+    local cframeFlyEnabled = false
+    local clickTpConnection = nil
+    local cframeFlyConnection = nil
     
     -- =======================
     -- FUNÇÕES
@@ -551,6 +557,119 @@ local function createGUI()
         return egorModeEnabled
     end
     
+    -- >>> NOVAS FUNÇÕES: Click TP e CFrame Fly
+    local function toggleClickTp()
+        clickTpEnabled = not clickTpEnabled
+        
+        if clickTpEnabled then
+            -- Conectar ao evento de clique do mouse
+            clickTpConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    -- Obter a posição do mouse no mundo
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local ray = camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+                    local direction = ray.Direction * 1000
+                    local origin = ray.Origin
+                    
+                    -- Fazer raycast para encontrar onde o jogador clicou
+                    local params = RaycastParams.new()
+                    params.FilterType = Enum.RaycastFilterType.Blacklist
+                    if player.Character then
+                        params.FilterDescendantsInstances = {player.Character}
+                    end
+                    
+                    local result = workspace:Raycast(origin, direction, params)
+                    
+                    if result and result.Position and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        -- Teleportar para a posição clicada
+                        player.Character.HumanoidRootPart.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0))
+                    end
+                end
+            end)
+        else
+            -- Desconectar o evento
+            if clickTpConnection then
+                clickTpConnection:Disconnect()
+                clickTpConnection = nil
+            end
+        end
+        
+        return clickTpEnabled
+    end
+    
+    local function toggleCframeFly()
+        cframeFlyEnabled = not cframeFlyEnabled
+        
+        if cframeFlyEnabled then
+            local flySpeed = 50
+            local flyKeys = {
+                [Enum.KeyCode.W] = Vector3.new(0, 0, -1),
+                [Enum.KeyCode.S] = Vector3.new(0, 0, 1),
+                [Enum.KeyCode.A] = Vector3.new(-1, 0, 0),
+                [Enum.KeyCode.D] = Vector3.new(1, 0, 0),
+                [Enum.KeyCode.Space] = Vector3.new(0, 1, 0),
+                [Enum.KeyCode.LeftShift] = Vector3.new(0, -1, 0)
+            }
+            
+            local velocity = Vector3.new()
+            local lastTime = tick()
+            
+            cframeFlyConnection = RunService.Heartbeat:Connect(function()
+                if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+                    return
+                end
+                
+                local rootPart = player.Character.HumanoidRootPart
+                local currentTime = tick()
+                local deltaTime = currentTime - lastTime
+                lastTime = currentTime
+                
+                -- Calcular direção do movimento baseado nas teclas pressionadas
+                local moveDirection = Vector3.new()
+                
+                for key, direction in pairs(flyKeys) do
+                    if UserInputService:IsKeyDown(key) then
+                        moveDirection = moveDirection + direction
+                    end
+                end
+                
+                -- Normalizar a direção se estiver se movendo em múltiplas direções
+                if moveDirection.Magnitude > 0 then
+                    moveDirection = moveDirection.Unit
+                end
+                
+                -- Aplicar aceleração e velocidade
+                local targetVelocity = moveDirection * flySpeed
+                velocity = velocity:Lerp(targetVelocity, 10 * deltaTime)
+                
+                -- Mover usando CFrame para evitar detecção de movimento pelo jogo
+                if velocity.Magnitude > 0.1 then
+                    local cameraCFrame = camera.CFrame
+                    local moveVector = cameraCFrame:VectorToWorldSpace(velocity * deltaTime)
+                    rootPart.CFrame = rootPart.CFrame + moveVector
+                    
+                    -- Manter a rotação original para parecer natural
+                    rootPart.Velocity = Vector3.new()
+                    rootPart.AssemblyLinearVelocity = Vector3.new()
+                end
+            end)
+        else
+            -- Desconectar o evento
+            if cframeFlyConnection then
+                cframeFlyConnection:Disconnect()
+                cframeFlyConnection = nil
+            end
+            
+            -- Restaurar física normal
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.Velocity = Vector3.new()
+                player.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new()
+            end
+        end
+        
+        return cframeFlyEnabled
+    end
+    
     -- Configurar humanoid quando o personagem spawnar
     player.CharacterAdded:Connect(function(character)
         wait(0.5) -- Esperar o humanoid ser criado
@@ -766,11 +885,39 @@ local function createGUI()
         EgorModeButton.Text = "Egor Mode: " .. (enabled and "ON" or "OFF")
     end)
     
+    -- >>> NOVO BOTÃO: Click TP
+    local ClickTpButton = Instance.new("TextButton")
+    ClickTpButton.Size = UDim2.new(0.9, 0, 0, 25)
+    ClickTpButton.Position = UDim2.new(0.05, 0, 0, 510)
+    ClickTpButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    ClickTpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ClickTpButton.Text = "Click TP: OFF"
+    ClickTpButton.Parent = MainFrame
+    
+    ClickTpButton.MouseButton1Click:Connect(function()
+        local enabled = toggleClickTp()
+        ClickTpButton.Text = "Click TP: " .. (enabled and "ON" or "OFF")
+    end)
+    
+    -- >>> NOVO BOTÃO: CFrame Fly
+    local CFrameFlyButton = Instance.new("TextButton")
+    CFrameFlyButton.Size = UDim2.new(0.9, 0, 0, 25)
+    CFrameFlyButton.Position = UDim2.new(0.05, 0, 0, 540)
+    CFrameFlyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    CFrameFlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CFrameFlyButton.Text = "CFrame Fly: OFF"
+    CFrameFlyButton.Parent = MainFrame
+    
+    CFrameFlyButton.MouseButton1Click:Connect(function()
+        local enabled = toggleCframeFly()
+        CFrameFlyButton.Text = "CFrame Fly: " .. (enabled and "ON" or "OFF")
+    end)
+    
     -- >>> NOVO SISTEMA: Teleporte por Coordenadas
     local PositionTextBox = Instance.new("TextBox")
     PositionTextBox.Name = "PositionTextBox"
     PositionTextBox.Size = UDim2.new(0.9, 0, 0, 25)
-    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 510)
+    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 570)
     PositionTextBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     PositionTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     PositionTextBox.PlaceholderText = "Digite as coordenadas (X,Y,Z) ou CFrame"
@@ -779,7 +926,7 @@ local function createGUI()
     
     local TeleportToPositionButton = Instance.new("TextButton")
     TeleportToPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
-    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 540)
+    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 600)
     TeleportToPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     TeleportToPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     TeleportToPositionButton.Text = "Teleportar á posição citada"
@@ -798,7 +945,7 @@ local function createGUI()
     
     local GetCurrentPositionButton = Instance.new("TextButton")
     GetCurrentPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
-    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 570)
+    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 630)
     GetCurrentPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     GetCurrentPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     GetCurrentPositionButton.Text = "Pegar posição atual"
