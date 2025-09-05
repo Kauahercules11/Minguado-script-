@@ -296,6 +296,7 @@ local function createGUI()
     local cframeFlyEnabled = false
     local clickTpConnection = nil
     local cframeFlyConnection = nil
+    local originalGravity
     
     -- =======================
     -- FUNÇÕES
@@ -360,14 +361,14 @@ local function createGUI()
             return Vector3.new(tonumber(x), tonumber(y), tonumber(z))
         end
         
-        -- Verifica se está no formato CFrame.new(X, Y, Z)
+        -- Verifica si está no formato CFrame.new(X, Y, Z)
         local cframeMatch = text:match("CFrame%.new%(([%d%.%-]+),([%d%.%-]+),([%d%.%-]+)%)")
         if cframeMatch then
             local x, y, z = text:match("CFrame%.new%(([%d%.%-]+),([%d%.%-]+),([%d%.%-]+)%)")
             return Vector3.new(tonumber(x), tonumber(y), tonumber(z))
         end
         
-        -- Verifica se está no formato {X, Y, Z}
+        -- Verifica si está no formato {X, Y, Z}
         local vectorMatch = text:match("{%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*}")
         if vectorMatch then
             local x, y, z = text:match("{%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*}")
@@ -611,6 +612,10 @@ local function createGUI()
                 [Enum.KeyCode.LeftShift] = Vector3.new(0, -1, 0)
             }
             
+            -- Salvar a gravidade original e desativá-la
+            originalGravity = workspace.Gravity
+            workspace.Gravity = 0
+            
             local velocity = Vector3.new()
             local lastTime = tick()
             
@@ -647,10 +652,16 @@ local function createGUI()
                     local cameraCFrame = camera.CFrame
                     local moveVector = cameraCFrame:VectorToWorldSpace(velocity * deltaTime)
                     rootPart.CFrame = rootPart.CFrame + moveVector
-                    
-                    -- Manter a rotação original para parecer natural
-                    rootPart.Velocity = Vector3.new()
-                    rootPart.AssemblyLinearVelocity = Vector3.new()
+                end
+                
+                -- Zerar a velocidade física para evitar queda
+                rootPart.Velocity = Vector3.new()
+                rootPart.AssemblyLinearVelocity = Vector3.new()
+                
+                -- Manter a posição Y constante se não estiver se movendo verticalmente
+                if moveDirection.Y == 0 then
+                    local currentPosition = rootPart.Position
+                    rootPart.CFrame = CFrame.new(currentPosition.X, currentPosition.Y, currentPosition.Z)
                 end
             end)
         else
@@ -658,6 +669,11 @@ local function createGUI()
             if cframeFlyConnection then
                 cframeFlyConnection:Disconnect()
                 cframeFlyConnection = nil
+            end
+            
+            -- Restaurar a gravidade original
+            if originalGravity then
+                workspace.Gravity = originalGravity
             end
             
             -- Restaurar física normal
