@@ -155,6 +155,7 @@ local function createGUI()
     PlayerSearchBox.PlaceholderText = "Digite o nome do jogador..."
     PlayerSearchBox.ClearTextOnFocus = false
     PlayerSearchBox.Parent = MainFrame
+	PlayerSearchBox.Text = ""
     
     -- Função para atualizar a exibição do jogador
     local function updatePlayerDisplay(targetPlayer)
@@ -751,6 +752,7 @@ local function createGUI()
     SpeedBox.PlaceholderText = "Digite a velocidade"
     SpeedBox.ClearTextOnFocus = false
     SpeedBox.Parent = MainFrame
+	SpeedBox.Text = "200"
     
     local SpeedButton = Instance.new("TextButton")
     SpeedButton.Size = UDim2.new(0.3,0,0,25)
@@ -939,6 +941,7 @@ local function createGUI()
     PositionTextBox.PlaceholderText = "Digite as coordenadas (X,Y,Z) ou CFrame"
     PositionTextBox.ClearTextOnFocus = false
     PositionTextBox.Parent = MainFrame
+	PositionTextBox.Text = "-53.57, 1023.05, -576.68"
     
     local TeleportToPositionButton = Instance.new("TextButton")
     TeleportToPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
