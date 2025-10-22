@@ -1,6 +1,6 @@
- game:GetService("StarterGui"):SetCore("SendNotification",{
+game:GetService("StarterGui"):SetCore("SendNotification",{
 	Title = "TrollGui", -- Required
-	Text = "Funcionou!!", -- Required
+	Text = "Atualização V1! terá mais mudanças no futuro!", -- Required
 	Icon = "rbxassetid://" -- Optional
 })
 -- LocalScript (Coloque em StarterPlayerScripts)
@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
@@ -75,8 +76,8 @@ local function createGUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 660) -- Aumentado para caber os novos botões
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -330)
+    MainFrame.Size = UDim2.new(0, 320, 0, 750) -- Aumentado para 750
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -375)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
     MainFrame.Draggable = true
@@ -189,6 +190,17 @@ local function createGUI()
     -- Variável para armazenar o jogador sendo rastreado
     local trackedPlayer = nil
     
+    -- Função para tocar som quando jogador sair
+    local function playLeaveSound()
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://6932519682"
+        sound.Parent = workspace
+        sound:Play()
+        sound.Ended:Connect(function()
+            sound:Destroy()
+        end)
+    end
+    
     -- Função para notificar quando o jogador sair
     local function onTrackedPlayerLeaving(leftPlayer)
         if trackedPlayer and leftPlayer == trackedPlayer then
@@ -197,6 +209,7 @@ local function createGUI()
                 Text = "O " .. trackedPlayer.Name .. " saiu!!",
                 Icon = "rbxassetid://"
             })
+            playLeaveSound()
             trackedPlayer = nil
             updatePlayerDisplay(nil) -- Limpar a exibição
         end
@@ -211,7 +224,8 @@ local function createGUI()
     TrackClosestButton.Position = UDim2.new(0.76, 0, 0, 150)
     TrackClosestButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     TrackClosestButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TrackClosestButton.Text = "Rastrear a pessoa próxima"
+    TrackClosestButton.Text = "Rastrear próximo"
+    TrackClosestButton.TextScaled = true
     TrackClosestButton.Parent = MainFrame
     
     TrackClosestButton.MouseEnter:Connect(function()
@@ -247,10 +261,41 @@ local function createGUI()
         end
     end)
     
+    -- Botão para jogador aleatório
+    local RandomPlayerButton = Instance.new("TextButton")
+    RandomPlayerButton.Name = "RandomPlayerButton"
+    RandomPlayerButton.Size = UDim2.new(0.9, 0, 0, 25)
+    RandomPlayerButton.Position = UDim2.new(0.05, 0, 0, 185)
+    RandomPlayerButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    RandomPlayerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    RandomPlayerButton.Text = "Jogador Aleatório"
+    RandomPlayerButton.Parent = MainFrame
+    
+    RandomPlayerButton.MouseButton1Click:Connect(function()
+        local allPlayers = Players:GetPlayers()
+        local validPlayers = {}
+        
+        for _, p in pairs(allPlayers) do
+            if p ~= player then
+                table.insert(validPlayers, p)
+            end
+        end
+        
+        if #validPlayers > 0 then
+            local randomPlayer = validPlayers[math.random(1, #validPlayers)]
+            PlayerSearchBox.Text = randomPlayer.Name
+            trackedPlayer = randomPlayer
+            updatePlayerDisplay(randomPlayer)
+        else
+            PlayerSearchBox.Text = ""
+            updatePlayerDisplay(nil)
+        end
+    end)
+    
     local PlayerExamples = Instance.new("TextLabel")
     PlayerExamples.Name = "PlayerExamples"
     PlayerExamples.Size = UDim2.new(0.9, 0, 0, 20)
-    PlayerExamples.Position = UDim2.new(0.05, 0, 0, 185)
+    PlayerExamples.Position = UDim2.new(0.05, 0, 0, 215)
     PlayerExamples.BackgroundTransparency = 1
     PlayerExamples.TextColor3 = Color3.fromRGB(180, 180, 180)
     PlayerExamples.Text = "Exemplos: "
@@ -269,9 +314,13 @@ local function createGUI()
     local allEspEnabled = false
     local currentTarget = nil
     local loopTPEnabled = false
+    local loopTPCombatEnabled = false
     local loopTPConnection = nil
+    local loopTPCombatConnection = nil
     local highlights = {}
     local minimizeKey = "R"
+    local godModeEnabled = false
+    local godModeConnection = nil
     
     -- >>> NOVAS VARIÁVEIS: Freeze Mode e Egor Mode
     local freezeModeEnabled = false
@@ -377,6 +426,70 @@ local function createGUI()
         end
         
         return nil
+    end
+    
+    -- >>> NOVA FUNÇÃO: God Mode (CORRIGIDA)
+    local function toggleGodMode()
+        godModeEnabled = not godModeEnabled
+        
+        if godModeEnabled then
+            -- Conectar para detectar mudanças de health
+            godModeConnection = RunService.Heartbeat:Connect(function()
+                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    -- Manter a saúde sempre no máximo
+                    if humanoid.Health ~= humanoid.MaxHealth then
+                        humanoid.Health = humanoid.MaxHealth
+                    end
+                end
+            end)
+        else
+            -- Desconectar o evento
+            if godModeConnection then
+                godModeConnection:Disconnect()
+                godModeConnection = nil
+            end
+        end
+        
+        return godModeEnabled
+    end
+    
+    -- >>> NOVA FUNÇÃO: Loop TP Combat (melhorado para jogos de combate)
+    local function toggleLoopTPCombat()
+        loopTPCombatEnabled = not loopTPCombatEnabled
+        
+        if loopTPCombatEnabled then
+            MainFrame.ToggleLoopTPCombat.Text = "Stop Loop TP Combat"
+            loopTPCombatConnection = RunService.Heartbeat:Connect(function()
+                if currentTarget and currentTarget.Character and player.Character then
+                    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                    local targetRoot = currentTarget.Character:FindFirstChild("HumanoidRootPart")
+                    
+                    if rootPart and targetRoot then
+                        -- Teleportação mais agressiva e constante
+                        local randomOffset = Vector3.new(
+                            math.random(-1, 1) * 0.5,
+                            math.random(0, 2),
+                            math.random(-1, 1) * 0.5
+                        )
+                        
+                        -- Posição mais próxima e com pequenas variações para "sacudir"
+                        local targetPosition = targetRoot.Position + targetRoot.CFrame.LookVector * tpDistanceStuds + randomOffset
+                        
+                        -- Usar CFrame diretamente para teleportação mais suave
+                        rootPart.CFrame = CFrame.new(targetPosition)
+                    end
+                end
+            end)
+        else
+            MainFrame.ToggleLoopTPCombat.Text = "Loop Teleport Combat"
+            if loopTPCombatConnection then
+                loopTPCombatConnection:Disconnect()
+                loopTPCombatConnection = nil
+            end
+        end
+        
+        return loopTPCombatEnabled
     end
     
     -- >>> NOVAS FUNÇÕES: Freeze Mode e Egor Mode
@@ -710,6 +823,11 @@ local function createGUI()
                 end
             end
         end
+        
+        -- Reaplicar God Mode se estiver ativo
+        if godModeEnabled then
+            toggleGodMode()
+        end
     end)
     
     if player.Character then
@@ -722,7 +840,7 @@ local function createGUI()
     -- Noclip
     local NoclipButton = Instance.new("TextButton")
     NoclipButton.Size = UDim2.new(0.9, 0, 0, 25)
-    NoclipButton.Position = UDim2.new(0.05, 0, 0, 210)
+    NoclipButton.Position = UDim2.new(0.05, 0, 0, 240)
     NoclipButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     NoclipButton.TextColor3 = Color3.fromRGB(255,255,255)
     NoclipButton.Text = "Noclip: OFF"
@@ -746,7 +864,7 @@ local function createGUI()
     -- Speed
     local SpeedBox = Instance.new("TextBox")
     SpeedBox.Size = UDim2.new(0.6,0,0,25)
-    SpeedBox.Position = UDim2.new(0.05,0,0,240)
+    SpeedBox.Position = UDim2.new(0.05,0,0,270)
     SpeedBox.BackgroundColor3 = Color3.fromRGB(60,60,60)
     SpeedBox.TextColor3 = Color3.fromRGB(255,255,255)
     SpeedBox.PlaceholderText = "Digite a velocidade"
@@ -756,7 +874,7 @@ local function createGUI()
     
     local SpeedButton = Instance.new("TextButton")
     SpeedButton.Size = UDim2.new(0.3,0,0,25)
-    SpeedButton.Position = UDim2.new(0.7,0,0,240)
+    SpeedButton.Position = UDim2.new(0.7,0,0,270)
     SpeedButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
     SpeedButton.TextColor3 = Color3.fromRGB(255,255,255)
     SpeedButton.Text = "Set"
@@ -776,7 +894,7 @@ local function createGUI()
     -- Teleport Spawn
     local TeleportSpawnButton = Instance.new("TextButton")
     TeleportSpawnButton.Size = UDim2.new(0.9,0,0,25)
-    TeleportSpawnButton.Position = UDim2.new(0.05,0,0,270)
+    TeleportSpawnButton.Position = UDim2.new(0.05,0,0,300)
     TeleportSpawnButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
     TeleportSpawnButton.TextColor3 = Color3.fromRGB(255,255,255)
     TeleportSpawnButton.Text = "Teleport to Spawn"
@@ -790,11 +908,12 @@ local function createGUI()
     
     -- ESP, Spectate, Loop TP, TeleportToPlayer
     local buttons = {
-        {Name="ToggleSpectate", Text="Spectate Player", YPos=300, Visible=false},
-        {Name="ToggleESP", Text="ESP Player", YPos=330, Visible=false},
-        {Name="ToggleAllESP", Text="ESP All Players", YPos=360, Visible=true},
-        {Name="ToggleLoopTP", Text="Loop Teleport", YPos=390, Visible=false},
-        {Name="TeleportToPlayer", Text="Teleport to Player", YPos=420, Visible=false}
+        {Name="ToggleSpectate", Text="Spectate Player", YPos=330, Visible=false},
+        {Name="ToggleESP", Text="ESP Player", YPos=360, Visible=false},
+        {Name="ToggleAllESP", Text="ESP All Players", YPos=390, Visible=true},
+        {Name="ToggleLoopTP", Text="Loop Teleport", YPos=420, Visible=false},
+        {Name="ToggleLoopTPCombat", Text="Loop Teleport Combat", YPos=450, Visible=false},
+        {Name="TeleportToPlayer", Text="Teleport to Player", YPos=480, Visible=false}
     }
     
     for _, btnData in pairs(buttons) do
@@ -871,14 +990,30 @@ local function createGUI()
                         loopTPConnection:Disconnect()
                     end
                 end
+            elseif btnData.Name=="ToggleLoopTPCombat" then
+                toggleLoopTPCombat()
             end
         end)
     end
     
+    -- >>> NOVO BOTÃO: God Mode (CORRIGIDO)
+    local GodModeButton = Instance.new("TextButton")
+    GodModeButton.Size = UDim2.new(0.9, 0, 0, 25)
+    GodModeButton.Position = UDim2.new(0.05, 0, 0, 510)
+    GodModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    GodModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    GodModeButton.Text = "God Mode: OFF"
+    GodModeButton.Parent = MainFrame
+    
+    GodModeButton.MouseButton1Click:Connect(function()
+        local enabled = toggleGodMode()
+        GodModeButton.Text = "God Mode: " .. (enabled and "ON" or "OFF")
+    end)
+    
     -- >>> NOVO BOTÃO: Freeze Mode
     local FreezeModeButton = Instance.new("TextButton")
     FreezeModeButton.Size = UDim2.new(0.9, 0, 0, 25)
-    FreezeModeButton.Position = UDim2.new(0.05, 0, 0, 450)
+    FreezeModeButton.Position = UDim2.new(0.05, 0, 0, 540)
     FreezeModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     FreezeModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     FreezeModeButton.Text = "Freeze Mode: OFF"
@@ -892,7 +1027,7 @@ local function createGUI()
     -- >>> NOVO BOTÃO: Egor Mode
     local EgorModeButton = Instance.new("TextButton")
     EgorModeButton.Size = UDim2.new(0.9, 0, 0, 25)
-    EgorModeButton.Position = UDim2.new(0.05, 0, 0, 480)
+    EgorModeButton.Position = UDim2.new(0.05, 0, 0, 570)
     EgorModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     EgorModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     EgorModeButton.Text = "Egor Mode: OFF"
@@ -906,7 +1041,7 @@ local function createGUI()
     -- >>> NOVO BOTÃO: Click TP
     local ClickTpButton = Instance.new("TextButton")
     ClickTpButton.Size = UDim2.new(0.9, 0, 0, 25)
-    ClickTpButton.Position = UDim2.new(0.05, 0, 0, 510)
+    ClickTpButton.Position = UDim2.new(0.05, 0, 0, 600)
     ClickTpButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     ClickTpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ClickTpButton.Text = "Click TP: OFF"
@@ -920,7 +1055,7 @@ local function createGUI()
     -- >>> NOVO BOTÃO: CFrame Fly
     local CFrameFlyButton = Instance.new("TextButton")
     CFrameFlyButton.Size = UDim2.new(0.9, 0, 0, 25)
-    CFrameFlyButton.Position = UDim2.new(0.05, 0, 0, 540)
+    CFrameFlyButton.Position = UDim2.new(0.05, 0, 0, 630)
     CFrameFlyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     CFrameFlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     CFrameFlyButton.Text = "CFrame Fly: OFF"
@@ -935,7 +1070,7 @@ local function createGUI()
     local PositionTextBox = Instance.new("TextBox")
     PositionTextBox.Name = "PositionTextBox"
     PositionTextBox.Size = UDim2.new(0.9, 0, 0, 25)
-    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 570)
+    PositionTextBox.Position = UDim2.new(0.05, 0, 0, 660)
     PositionTextBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     PositionTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     PositionTextBox.PlaceholderText = "Digite as coordenadas (X,Y,Z) ou CFrame"
@@ -945,7 +1080,7 @@ local function createGUI()
     
     local TeleportToPositionButton = Instance.new("TextButton")
     TeleportToPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
-    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 600)
+    TeleportToPositionButton.Position = UDim2.new(0.05, 0, 0, 690)
     TeleportToPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     TeleportToPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     TeleportToPositionButton.Text = "Teleportar á posição citada"
@@ -964,7 +1099,7 @@ local function createGUI()
     
     local GetCurrentPositionButton = Instance.new("TextButton")
     GetCurrentPositionButton.Size = UDim2.new(0.9, 0, 0, 25)
-    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 630)
+    GetCurrentPositionButton.Position = UDim2.new(0.05, 0, 0, 720)
     GetCurrentPositionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     GetCurrentPositionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     GetCurrentPositionButton.Text = "Pegar posição atual"
@@ -994,8 +1129,10 @@ local function createGUI()
             updatePlayerDisplay(nil) -- Limpa a exibição se não há texto
         end
         
-        for _, btnName in pairs({"ToggleSpectate","ToggleESP","ToggleLoopTP","TeleportToPlayer"}) do
-            MainFrame[btnName].Visible=currentTarget~=nil
+        for _, btnName in pairs({"ToggleSpectate","ToggleESP","ToggleLoopTP","ToggleLoopTPCombat","TeleportToPlayer"}) do
+            if MainFrame:FindFirstChild(btnName) then
+                MainFrame[btnName].Visible=currentTarget~=nil
+            end
         end
     end)
     
