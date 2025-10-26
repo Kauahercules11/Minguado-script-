@@ -1,6 +1,6 @@
 game:GetService("StarterGui"):SetCore("SendNotification",{
 	Title = "TrollGui", -- Required
-	Text = "Atualização V1! terá mais mudanças no futuro!", -- Required
+	Text = "Funcionou!!", -- Required
 	Icon = "rbxassetid://" -- Optional
 })
 -- LocalScript (Coloque em StarterPlayerScripts)
@@ -48,9 +48,27 @@ local function createServerScript()
             end
         end
         
-        remote.OnServerEvent:Connect(function(player, action)
+        -- Função para Fake Death no servidor
+        local function handleFakeDeath(player, enabled)
+            if player.Character then
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    if enabled then
+                        -- Ativar ragdoll no servidor de forma segura
+                        humanoid.PlatformStand = true
+                    else
+                        -- Restaurar estado normal
+                        humanoid.PlatformStand = false
+                    end
+                end
+            end
+        end
+        
+        remote.OnServerEvent:Connect(function(player, action, data)
             if action == "modifySounds" then
                 modifySounds()
+            elseif action == "fakeDeath" then
+                handleFakeDeath(player, data)
             end
         end)
         
@@ -76,7 +94,7 @@ local function createGUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 750) -- Aumentado para 750
+    MainFrame.Size = UDim2.new(0, 320, 0, 750)
     MainFrame.Position = UDim2.new(0.5, -160, 0.5, -375)
     MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     MainFrame.Active = true
@@ -132,7 +150,7 @@ local function createGUI()
     PlayerImage.Position = UDim2.new(0.5, -30, 0.15, 0)
     PlayerImage.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     PlayerImage.BorderSizePixel = 0
-    PlayerImage.Image = "rbxassetid://0" -- Imagem padrão
+    PlayerImage.Image = "rbxassetid://0"
     PlayerImage.Parent = PlayerDisplayFrame
     
     local PlayerNameLabel = Instance.new("TextLabel")
@@ -161,26 +179,19 @@ local function createGUI()
     -- Função para atualizar a exibição do jogador
     local function updatePlayerDisplay(targetPlayer)
         if targetPlayer then
-            -- Usar pcall para evitar erros ao carregar a imagem
             pcall(function()
                 local thumbType = Enum.ThumbnailType.HeadShot
                 local thumbSize = Enum.ThumbnailSize.Size420x420
-                
-                -- Obter a thumbnail do jogador
                 local content, isReady = Players:GetUserThumbnailAsync(targetPlayer.UserId, thumbType, thumbSize)
-                
                 if content then
                     PlayerImage.Image = content
                 else
-                    PlayerImage.Image = "rbxassetid://0" -- Imagem padrão se falhar
+                    PlayerImage.Image = "rbxassetid://0"
                 end
             end)
-            
-            -- Atualizar nome do jogador
             PlayerNameLabel.Text = targetPlayer.Name
             PlayerNameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
-            -- Resetar para valores padrão
             PlayerImage.Image = "rbxassetid://0"
             PlayerNameLabel.Text = "Nenhum jogador citado"
             PlayerNameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -211,7 +222,7 @@ local function createGUI()
             })
             playLeaveSound()
             trackedPlayer = nil
-            updatePlayerDisplay(nil) -- Limpar a exibição
+            updatePlayerDisplay(nil)
         end
     end
     
@@ -257,7 +268,7 @@ local function createGUI()
         if closest then
             PlayerSearchBox.Text = closest.Name
             trackedPlayer = closest
-            updatePlayerDisplay(closest) -- Atualizar a exibição
+            updatePlayerDisplay(closest)
         end
     end)
     
@@ -314,13 +325,20 @@ local function createGUI()
     local allEspEnabled = false
     local currentTarget = nil
     local loopTPEnabled = false
-    local loopTPCombatEnabled = false
     local loopTPConnection = nil
-    local loopTPCombatConnection = nil
     local highlights = {}
     local minimizeKey = "R"
     local godModeEnabled = false
     local godModeConnection = nil
+    local fakeDeathEnabled = false
+    local fakeDeathConnection = nil
+    local originalCollisionGroups = {}
+    local originalHealth = 100
+
+    -- Variáveis para God Mode avançado
+    local originalHumanoidProperties = {}
+    local protectedScripts = {}
+    local originalScriptsState = {}
     
     -- >>> NOVAS VARIÁVEIS: Freeze Mode e Egor Mode
     local freezeModeEnabled = false
@@ -333,8 +351,8 @@ local function createGUI()
     local animator = nil
     local walkAnimationTrack = nil
     local idleAnimationTrack = nil
-    local walkAnimationId = "rbxassetid://3760534309" -- Animação de andar padrão do Roblox
-    local idleAnimationId = "rbxassetid://180435571" -- Animação de idle padrão do Roblox
+    local walkAnimationId = "rbxassetid://3760534309"
+    local idleAnimationId = "rbxassetid://180435571"
     local egorModeConnection = nil
     local freezeModeConnection = nil
     
@@ -402,23 +420,19 @@ local function createGUI()
     
     -- >>> FUNÇÃO PARA ANALISAR COORDENADAS
     local function parseCoordinates(text)
-        -- Remove espaços e quebras de linha
         text = text:gsub("%s+", "")
         
-        -- Verifica se está no formato X,Y,Z
         local x, y, z = text:match("^([%d%.%-]+),([%d%.%-]+),([%d%.%-]+)$")
         if x and y and z then
             return Vector3.new(tonumber(x), tonumber(y), tonumber(z))
         end
         
-        -- Verifica si está no formato CFrame.new(X, Y, Z)
         local cframeMatch = text:match("CFrame%.new%(([%d%.%-]+),([%d%.%-]+),([%d%.%-]+)%)")
         if cframeMatch then
             local x, y, z = text:match("CFrame%.new%(([%d%.%-]+),([%d%.%-]+),([%d%.%-]+)%)")
             return Vector3.new(tonumber(x), tonumber(y), tonumber(z))
         end
         
-        -- Verifica si está no formato {X, Y, Z}
         local vectorMatch = text:match("{%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*}")
         if vectorMatch then
             local x, y, z = text:match("{%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*,%s*([%d%.%-]+)%s*}")
@@ -428,68 +442,200 @@ local function createGUI()
         return nil
     end
     
-    -- >>> NOVA FUNÇÃO: God Mode (CORRIGIDA)
+    -- >>> NOVA FUNÇÃO: God Mode AVANÇADO
     local function toggleGodMode()
         godModeEnabled = not godModeEnabled
         
         if godModeEnabled then
-            -- Conectar para detectar mudanças de health
-            godModeConnection = RunService.Heartbeat:Connect(function()
-                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                    -- Manter a saúde sempre no máximo
+            MainFrame.GodModeButton.Text = "God Mode: ON"
+            
+            -- Salvar estado original
+            if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                originalHumanoidProperties = {
+                    Health = humanoid.Health,
+                    MaxHealth = humanoid.MaxHealth,
+                    HealthChanged = humanoid.HealthChanged
+                }
+                
+                -- Prevenir qualquer mudança de health
+                humanoid.HealthChanged:Connect(function(newHealth)
                     if humanoid.Health ~= humanoid.MaxHealth then
                         humanoid.Health = humanoid.MaxHealth
                     end
+                end)
+                
+                -- Conexão principal para proteger contra dano
+                godModeConnection = RunService.Heartbeat:Connect(function()
+                    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                        
+                        -- Manter saúde sempre no máximo
+                        if humanoid.Health ~= humanoid.MaxHealth then
+                            humanoid.Health = humanoid.MaxHealth
+                        end
+                        
+                        -- Prevenir morte por qualquer meio
+                        if humanoid.Health <= 0 then
+                            humanoid.Health = humanoid.MaxHealth
+                        end
+                    end
+                end)
+                
+                -- Proteger contra scripts de dano
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("Script") or obj:IsA("LocalScript") then
+                        pcall(function()
+                            if obj.Disabled == false then
+                                originalScriptsState[obj] = true
+                                -- Tentar detectar scripts de dano pelo nome ou conteúdo
+                                if obj.Name:lower():find("damage") or obj.Name:lower():find("health") or obj.Name:lower():find("kill") then
+                                    obj.Disabled = true
+                                    table.insert(protectedScripts, obj)
+                                end
+                            end
+                        end)
+                    end
                 end
-            end)
+                
+                -- Proteger contra tool damage
+                if player.Character then
+                    for _, tool in pairs(player.Character:GetChildren()) do
+                        if tool:IsA("Tool") then
+                            for _, script in pairs(tool:GetDescendants()) do
+                                if script:IsA("Script") and script.Disabled == false then
+                                    originalScriptsState[script] = true
+                                    script.Disabled = true
+                                    table.insert(protectedScripts, script)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            
         else
-            -- Desconectar o evento
+            MainFrame.GodModeButton.Text = "God Mode: OFF"
+            
+            -- Restaurar estado original
             if godModeConnection then
                 godModeConnection:Disconnect()
                 godModeConnection = nil
             end
+            
+            -- Reativar scripts protegidos
+            for _, script in pairs(protectedScripts) do
+                if script and script.Parent then
+                    pcall(function()
+                        script.Disabled = false
+                    end)
+                end
+            end
+            protectedScripts = {}
+            
+            if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                -- Restaurar propriedades originais se existirem
+                if originalHumanoidProperties.Health then
+                    humanoid.Health = originalHumanoidProperties.Health
+                end
+            end
+            
+            originalHumanoidProperties = {}
         end
         
         return godModeEnabled
     end
     
-    -- >>> NOVA FUNÇÃO: Loop TP Combat (melhorado para jogos de combate)
-    local function toggleLoopTPCombat()
-        loopTPCombatEnabled = not loopTPCombatEnabled
+    -- >>> NOVA FUNÇÃO: Fake Death CORRIGIDA (não trava)
+    local function toggleFakeDeath()
+        fakeDeathEnabled = not fakeDeathEnabled
         
-        if loopTPCombatEnabled then
-            MainFrame.ToggleLoopTPCombat.Text = "Stop Loop TP Combat"
-            loopTPCombatConnection = RunService.Heartbeat:Connect(function()
-                if currentTarget and currentTarget.Character and player.Character then
-                    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-                    local targetRoot = currentTarget.Character:FindFirstChild("HumanoidRootPart")
+        if fakeDeathEnabled then
+            MainFrame.ToggleFakeDeath.Text = "Fake Death: ON"
+            
+            -- Enviar para servidor primeiro
+            if ReplicatedStorage:FindFirstChild("KauaRemote") then
+                ReplicatedStorage.KauaRemote:FireServer("fakeDeath", true)
+            end
+            
+            -- Efeito local SIMPLES e seguro
+            if player.Character then
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                
+                if humanoid and rootPart then
+                    -- Salvar estado original
+                    originalHealth = humanoid.Health
                     
-                    if rootPart and targetRoot then
-                        -- Teleportação mais agressiva e constante
-                        local randomOffset = Vector3.new(
-                            math.random(-1, 1) * 0.5,
-                            math.random(0, 2),
-                            math.random(-1, 1) * 0.5
-                        )
-                        
-                        -- Posição mais próxima e com pequenas variações para "sacudir"
-                        local targetPosition = targetRoot.Position + targetRoot.CFrame.LookVector * tpDistanceStuds + randomOffset
-                        
-                        -- Usar CFrame diretamente para teleportação mais suave
-                        rootPart.CFrame = CFrame.new(targetPosition)
+                    -- Método SIMPLES: apenas ativar PlatformStand
+                    humanoid.PlatformStand = true
+                    
+                    -- Aplicar uma força BEM LEVE para cair naturalmente
+                    local lightFall = Vector3.new(0, -15, 0)
+                    rootPart.Velocity = lightFall
+                    
+                    -- Pequena rotação mínima para efeito
+                    rootPart.RotVelocity = Vector3.new(1, 0, 1)
+                    
+                    -- Manter colisões ATIVAS para evitar bugs
+                    for _, part in pairs(player.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            originalCollisionGroups[part] = part.CollisionGroupId
+                            part.CanCollide = true  -- Manter colisão ativa
+                        end
+                    end
+                end
+            end
+            
+            -- Conexão LEVE para manter o ragdoll
+            fakeDeathConnection = RunService.Heartbeat:Connect(function()
+                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    
+                    -- Apenas garantir que PlatformStand permanece ativo
+                    if not humanoid.PlatformStand then
+                        humanoid.PlatformStand = true
                     end
                 end
             end)
+            
         else
-            MainFrame.ToggleLoopTPCombat.Text = "Loop Teleport Combat"
-            if loopTPCombatConnection then
-                loopTPCombatConnection:Disconnect()
-                loopTPCombatConnection = nil
+            MainFrame.ToggleFakeDeath.Text = "Fake Death: OFF"
+            
+            -- Desativar no servidor
+            if ReplicatedStorage:FindFirstChild("KauaRemote") then
+                ReplicatedStorage.KauaRemote:FireServer("fakeDeath", false)
+            end
+            
+            -- Restaurar estado normal
+            if fakeDeathConnection then
+                fakeDeathConnection:Disconnect()
+                fakeDeathConnection = nil
+            end
+            
+            if player.Character then
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    -- Simplesmente desativar PlatformStand
+                    humanoid.PlatformStand = false
+                    
+                    -- Restaurar colisões
+                    for part, originalGroup in pairs(originalCollisionGroups) do
+                        if part and part.Parent then
+                            part.CollisionGroupId = originalGroup
+                        end
+                    end
+                    originalCollisionGroups = {}
+                    
+                    -- Fazer personagem se levantar
+                    wait(0.1)
+                    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                end
             end
         end
         
-        return loopTPCombatEnabled
+        return fakeDeathEnabled
     end
     
     -- >>> NOVAS FUNÇÕES: Freeze Mode e Egor Mode
@@ -513,14 +659,12 @@ local function createGUI()
             humanoid = player.Character:FindFirstChildOfClass("Humanoid")
             originalWalkSpeed = humanoid.WalkSpeed
             
-            -- Encontrar ou criar animator
             animator = humanoid:FindFirstChildOfClass("Animator")
             if not animator then
                 animator = Instance.new("Animator")
                 animator.Parent = humanoid
             end
             
-            -- Carregar animações
             if not walkAnimationTrack then
                 local walkAnimation = Instance.new("Animation")
                 walkAnimation.AnimationId = walkAnimationId
@@ -535,15 +679,11 @@ local function createGUI()
                 idleAnimationTrack.Priority = Enum.AnimationPriority.Core
             end
             
-            -- Conectar para Freeze Mode - sistema mais robusto
             freezeModeConnection = RunService.Heartbeat:Connect(function()
                 if freezeModeEnabled and humanoid then
-                    -- Congela o personagem completamente
                     humanoid.WalkSpeed = 0
                     
-                    -- Forçar animação baseada no movimento
                     if humanoid.MoveDirection.Magnitude > 0 then
-                        -- Tentando se mover - tocar animação de andar
                         if walkAnimationTrack then
                             if not walkAnimationTrack.IsPlaying then
                                 walkAnimationTrack:Play()
@@ -554,7 +694,6 @@ local function createGUI()
                             idleAnimationTrack:Stop()
                         end
                     else
-                        -- Parado - tocar animação de idle
                         if walkAnimationTrack and walkAnimationTrack.IsPlaying then
                             walkAnimationTrack:Stop()
                         end
@@ -563,7 +702,6 @@ local function createGUI()
                         end
                     end
                     
-                    -- Prevenir qualquer movimento físico
                     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         player.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
                         player.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
@@ -571,10 +709,8 @@ local function createGUI()
                 end
             end)
             
-            -- Conectar para Egor Mode - sistema mais robusto
             egorModeConnection = RunService.Heartbeat:Connect(function()
                 if egorModeEnabled and humanoid and animator then
-                    -- Acelerar TODAS as animações em execução
                     for _, track in pairs(animator:GetPlayingAnimationTracks()) do
                         if not originalAnimations[track] then
                             originalAnimations[track] = track.Speed
@@ -582,7 +718,6 @@ local function createGUI()
                         track:AdjustSpeed(egorSpeedMultiplier)
                     end
                     
-                    -- Garantir que a animação de andar continue acelerada mesmo quando parado
                     if humanoid.MoveDirection.Magnitude > 0 then
                         if walkAnimationTrack and not walkAnimationTrack.IsPlaying then
                             walkAnimationTrack:Play()
@@ -599,24 +734,16 @@ local function createGUI()
         
         if player.Character and humanoid then
             if freezeModeEnabled then
-                -- Congela o personagem
                 humanoid.WalkSpeed = 0
-                
-                -- Iniciar animação de idle
                 if idleAnimationTrack then
                     idleAnimationTrack:Play()
                 end
-                
-                -- Parar qualquer movimento imediatamente
                 if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                     player.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
                     player.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
             else
-                -- Restaurar a velocidade normal
                 humanoid.WalkSpeed = originalWalkSpeed
-                
-                -- Parar animações forçadas
                 if walkAnimationTrack then
                     walkAnimationTrack:Stop()
                 end
@@ -634,7 +761,6 @@ local function createGUI()
         
         if player.Character and humanoid then
             if egorModeEnabled then
-                -- Acelerar TODAS as animações
                 if animator then
                     for _, track in pairs(animator:GetPlayingAnimationTracks()) do
                         if not originalAnimations[track] then
@@ -643,8 +769,6 @@ local function createGUI()
                         track:AdjustSpeed(egorSpeedMultiplier)
                     end
                 end
-                
-                -- Forçar animação de andar acelerada
                 if walkAnimationTrack then
                     if not walkAnimationTrack.IsPlaying then
                         walkAnimationTrack:Play()
@@ -652,7 +776,6 @@ local function createGUI()
                     walkAnimationTrack:AdjustSpeed(egorSpeedMultiplier)
                 end
             else
-                -- Restaurar velocidades normais das animações
                 if animator then
                     for track, originalSpeed in pairs(originalAnimations) do
                         if track then
@@ -660,11 +783,9 @@ local function createGUI()
                         end
                     end
                 end
-                
                 if walkAnimationTrack then
                     walkAnimationTrack:AdjustSpeed(1)
                 end
-                
                 originalAnimations = {}
             end
         end
@@ -677,16 +798,13 @@ local function createGUI()
         clickTpEnabled = not clickTpEnabled
         
         if clickTpEnabled then
-            -- Conectar ao evento de clique do mouse
             clickTpConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    -- Obter a posição do mouse no mundo
                     local mousePos = UserInputService:GetMouseLocation()
                     local ray = camera:ViewportPointToRay(mousePos.X, mousePos.Y)
                     local direction = ray.Direction * 1000
                     local origin = ray.Origin
                     
-                    -- Fazer raycast para encontrar onde o jogador clicou
                     local params = RaycastParams.new()
                     params.FilterType = Enum.RaycastFilterType.Blacklist
                     if player.Character then
@@ -696,13 +814,11 @@ local function createGUI()
                     local result = workspace:Raycast(origin, direction, params)
                     
                     if result and result.Position and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        -- Teleportar para a posição clicada
                         player.Character.HumanoidRootPart.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0))
                     end
                 end
             end)
         else
-            -- Desconectar o evento
             if clickTpConnection then
                 clickTpConnection:Disconnect()
                 clickTpConnection = nil
@@ -726,7 +842,6 @@ local function createGUI()
                 [Enum.KeyCode.LeftShift] = Vector3.new(0, -1, 0)
             }
             
-            -- Salvar a gravidade original e desativá-la
             originalGravity = workspace.Gravity
             workspace.Gravity = 0
             
@@ -743,7 +858,6 @@ local function createGUI()
                 local deltaTime = currentTime - lastTime
                 lastTime = currentTime
                 
-                -- Calcular direção do movimento baseado nas teclas pressionadas
                 local moveDirection = Vector3.new()
                 
                 for key, direction in pairs(flyKeys) do
@@ -752,45 +866,37 @@ local function createGUI()
                     end
                 end
                 
-                -- Normalizar a direção se estiver se movendo em múltiplas direções
                 if moveDirection.Magnitude > 0 then
                     moveDirection = moveDirection.Unit
                 end
                 
-                -- Aplicar aceleração e velocidade
                 local targetVelocity = moveDirection * flySpeed
                 velocity = velocity:Lerp(targetVelocity, 10 * deltaTime)
                 
-                -- Mover usando CFrame para evitar detecção de movimento pelo jogo
                 if velocity.Magnitude > 0.1 then
                     local cameraCFrame = camera.CFrame
                     local moveVector = cameraCFrame:VectorToWorldSpace(velocity * deltaTime)
                     rootPart.CFrame = rootPart.CFrame + moveVector
                 end
                 
-                -- Zerar a velocidade física para evitar queda
                 rootPart.Velocity = Vector3.new()
                 rootPart.AssemblyLinearVelocity = Vector3.new()
                 
-                -- Manter a posição Y constante se não estiver se movendo verticalmente
                 if moveDirection.Y == 0 then
                     local currentPosition = rootPart.Position
                     rootPart.CFrame = CFrame.new(currentPosition.X, currentPosition.Y, currentPosition.Z)
                 end
             end)
         else
-            -- Desconectar o evento
             if cframeFlyConnection then
                 cframeFlyConnection:Disconnect()
                 cframeFlyConnection = nil
             end
             
-            -- Restaurar a gravidade original
             if originalGravity then
                 workspace.Gravity = originalGravity
             end
             
-            -- Restaurar física normal
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 player.Character.HumanoidRootPart.Velocity = Vector3.new()
                 player.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new()
@@ -802,10 +908,9 @@ local function createGUI()
     
     -- Configurar humanoid quando o personagem spawnar
     player.CharacterAdded:Connect(function(character)
-        wait(0.5) -- Esperar o humanoid ser criado
+        wait(0.5)
         setupHumanoid()
         
-        -- Reaplicar modos se estiverem ativos
         if freezeModeEnabled then
             humanoid.WalkSpeed = 0
             if idleAnimationTrack then
@@ -824,9 +929,12 @@ local function createGUI()
             end
         end
         
-        -- Reaplicar God Mode se estiver ativo
         if godModeEnabled then
             toggleGodMode()
+        end
+        
+        if fakeDeathEnabled then
+            toggleFakeDeath()
         end
     end)
     
@@ -912,7 +1020,7 @@ local function createGUI()
         {Name="ToggleESP", Text="ESP Player", YPos=360, Visible=false},
         {Name="ToggleAllESP", Text="ESP All Players", YPos=390, Visible=true},
         {Name="ToggleLoopTP", Text="Loop Teleport", YPos=420, Visible=false},
-        {Name="ToggleLoopTPCombat", Text="Loop Teleport Combat", YPos=450, Visible=false},
+        {Name="ToggleFakeDeath", Text="Fake Death: OFF", YPos=450, Visible=true},
         {Name="TeleportToPlayer", Text="Teleport to Player", YPos=480, Visible=false}
     }
     
@@ -966,7 +1074,6 @@ local function createGUI()
                     local rootPart=player.Character:FindFirstChild("HumanoidRootPart")
                     local targetRoot=currentTarget.Character:FindFirstChild("HumanoidRootPart")
                     if rootPart and targetRoot then
-                        -- >>> usa a distância configurada na nova TextBox
                         rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,tpDistanceStuds)
                     end
                 end
@@ -979,7 +1086,6 @@ local function createGUI()
                             local rootPart=player.Character:FindFirstChild("HumanoidRootPart")
                             local targetRoot=currentTarget.Character:FindFirstChild("HumanoidRootPart")
                             if rootPart and targetRoot then
-                                -- >>> usa a distância configurada na nova TextBox
                                 rootPart.CFrame = targetRoot.CFrame * CFrame.new(0,0,tpDistanceStuds)
                             end
                         end
@@ -990,14 +1096,15 @@ local function createGUI()
                         loopTPConnection:Disconnect()
                     end
                 end
-            elseif btnData.Name=="ToggleLoopTPCombat" then
-                toggleLoopTPCombat()
+            elseif btnData.Name=="ToggleFakeDeath" then
+                toggleFakeDeath()
             end
         end)
     end
     
-    -- >>> NOVO BOTÃO: God Mode (CORRIGIDO)
+    -- >>> BOTÃO: God Mode AVANÇADO
     local GodModeButton = Instance.new("TextButton")
+    GodModeButton.Name = "GodModeButton"
     GodModeButton.Size = UDim2.new(0.9, 0, 0, 25)
     GodModeButton.Position = UDim2.new(0.05, 0, 0, 510)
     GodModeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
@@ -1010,7 +1117,7 @@ local function createGUI()
         GodModeButton.Text = "God Mode: " .. (enabled and "ON" or "OFF")
     end)
     
-    -- >>> NOVO BOTÃO: Freeze Mode
+    -- >>> BOTÃO: Freeze Mode
     local FreezeModeButton = Instance.new("TextButton")
     FreezeModeButton.Size = UDim2.new(0.9, 0, 0, 25)
     FreezeModeButton.Position = UDim2.new(0.05, 0, 0, 540)
@@ -1024,7 +1131,7 @@ local function createGUI()
         FreezeModeButton.Text = "Freeze Mode: " .. (enabled and "ON" or "OFF")
     end)
     
-    -- >>> NOVO BOTÃO: Egor Mode
+    -- >>> BOTÃO: Egor Mode
     local EgorModeButton = Instance.new("TextButton")
     EgorModeButton.Size = UDim2.new(0.9, 0, 0, 25)
     EgorModeButton.Position = UDim2.new(0.05, 0, 0, 570)
@@ -1038,7 +1145,7 @@ local function createGUI()
         EgorModeButton.Text = "Egor Mode: " .. (enabled and "ON" or "OFF")
     end)
     
-    -- >>> NOVO BOTÃO: Click TP
+    -- >>> BOTÃO: Click TP
     local ClickTpButton = Instance.new("TextButton")
     ClickTpButton.Size = UDim2.new(0.9, 0, 0, 25)
     ClickTpButton.Position = UDim2.new(0.05, 0, 0, 600)
@@ -1052,7 +1159,7 @@ local function createGUI()
         ClickTpButton.Text = "Click TP: " .. (enabled and "ON" or "OFF")
     end)
     
-    -- >>> NOVO BOTÃO: CFrame Fly
+    -- >>> BOTÃO: CFrame Fly
     local CFrameFlyButton = Instance.new("TextButton")
     CFrameFlyButton.Size = UDim2.new(0.9, 0, 0, 25)
     CFrameFlyButton.Position = UDim2.new(0.05, 0, 0, 630)
@@ -1066,7 +1173,7 @@ local function createGUI()
         CFrameFlyButton.Text = "CFrame Fly: " .. (enabled and "ON" or "OFF")
     end)
     
-    -- >>> NOVO SISTEMA: Teleporte por Coordenadas
+    -- >>> SISTEMA: Teleporte por Coordenadas
     local PositionTextBox = Instance.new("TextBox")
     PositionTextBox.Name = "PositionTextBox"
     PositionTextBox.Size = UDim2.new(0.9, 0, 0, 25)
@@ -1120,16 +1227,16 @@ local function createGUI()
             for _,p in pairs(Players:GetPlayers()) do
                 if string.lower(p.Name):find(text)==1 or (p.DisplayName and string.lower(p.DisplayName):find(text)==1) then
                     currentTarget=p
-                    trackedPlayer = p -- Atualiza o jogador sendo rastreado
-                    updatePlayerDisplay(p) -- Atualiza a exibição
+                    trackedPlayer = p
+                    updatePlayerDisplay(p)
                     break
                 end
             end
         else
-            updatePlayerDisplay(nil) -- Limpa a exibição se não há texto
+            updatePlayerDisplay(nil)
         end
         
-        for _, btnName in pairs({"ToggleSpectate","ToggleESP","ToggleLoopTP","ToggleLoopTPCombat","TeleportToPlayer"}) do
+        for _, btnName in pairs({"ToggleSpectate","ToggleESP","ToggleLoopTP","TeleportToPlayer"}) do
             if MainFrame:FindFirstChild(btnName) then
                 MainFrame[btnName].Visible=currentTarget~=nil
             end
