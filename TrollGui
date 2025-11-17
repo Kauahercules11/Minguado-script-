@@ -1266,3 +1266,25 @@ end
 -- Inicia tudo
 createServerScript()
 createGUI()
+
+-- 10% de chance para o som raro
+local chanceRaro = math.random(1, 10) == 1
+
+-- IDs dos sons
+local somNormal = 2428506580
+local somRaro = 5710016194
+
+-- Criar o objeto Sound
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://" .. (chanceRaro and somRaro or somNormal)
+sound.Looped = false
+sound.Volume = 1
+sound.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Tocar o som
+sound:Play()
+
+-- Opcional: remover o som depois que terminar
+sound.Ended:Connect(function()
+	sound:Destroy()
+end)
