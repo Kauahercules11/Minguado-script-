@@ -1712,199 +1712,6 @@ BotaoTesteX = {
         end
     end
 },
-UniversoParalelo = {
-    Nome = "Universo Paralelo",
-    IsToggle = true,
-    Repeat = false,
-
-    Script = function(state)
-
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local Lighting = game:GetService("Lighting")
-
-        local player = Players.LocalPlayer
-        local char = player.Character or player.CharacterAdded:Wait()
-        local hum = char:WaitForChild("Humanoid")
-        local root = char:WaitForChild("HumanoidRootPart")
-        local cam = workspace.CurrentCamera
-
-        _G.UP = _G.UP or {}
-        local U = _G.UP
-
-        -- =====================
-        -- UTIL
-        -- =====================
-
-        local function setSkyBlack(on)
-            if on then
-                if not U.oldSky then
-                    U.oldSky = Lighting:FindFirstChildOfClass("Sky")
-                end
-                if U.oldSky then U.oldSky.Parent = nil end
-
-                U.blackSky = Instance.new("Sky")
-                U.blackSky.SkyboxBk = "rbxassetid://0"
-                U.blackSky.SkyboxDn = "rbxassetid://0"
-                U.blackSky.SkyboxFt = "rbxassetid://0"
-                U.blackSky.SkyboxLf = "rbxassetid://0"
-                U.blackSky.SkyboxRt = "rbxassetid://0"
-                U.blackSky.SkyboxUp = "rbxassetid://0"
-                U.blackSky.Parent = Lighting
-            else
-                if U.blackSky then U.blackSky:Destroy() end
-                if U.oldSky then U.oldSky.Parent = Lighting end
-            end
-        end
-
-        local function hideWorld(on)
-            for _,v in pairs(workspace:GetDescendants()) do
-                if v:IsA("BasePart") and not char:IsAncestorOf(v) then
-                    v.LocalTransparencyModifier = on and 1 or 0
-                end
-            end
-        end
-
-        local function manualCrouch(on)
-            local joint = root:FindFirstChildWhichIsA("Motor6D")
-            if not joint then return end
-
-            if on then
-                U.oldC0 = joint.C0
-                joint.C0 = joint.C0 * CFrame.new(0, -1.1, 0)
-            else
-                if U.oldC0 then joint.C0 = U.oldC0 end
-            end
-        end
-
-        local function createBlackFloor()
-            if U.floor then return end
-            U.floor = Instance.new("Part")
-            U.floor.Size = Vector3.new(2000, 10, 2000)
-            U.floor.Anchored = true
-            U.floor.Color = Color3.new(0,0,0)
-            U.floor.Material = Enum.Material.SmoothPlastic
-            U.floor.CFrame = CFrame.new(root.Position.X, root.Position.Y - 6, root.Position.Z)
-            U.floor.Parent = workspace
-        end
-
-        local function removeFloor()
-            if U.floor then
-                U.floor:Destroy()
-                U.floor = nil
-            end
-        end
-
-        local function stopCamera()
-            if U.camConn then
-                U.camConn:Disconnect()
-                U.camConn = nil
-                cam.CameraSubject = hum
-            end
-        end
-
-        -- =====================
-        -- RESET + VOLTA CORRENDO
-        -- =====================
-        local function resetAll(runBack)
-            U.running = false
-            if U.moveConn then U.moveConn:Disconnect() end
-            if U.camConn then U.camConn:Disconnect() end
-
-            stopCamera()
-            manualCrouch(false)
-            hideWorld(false)
-            setSkyBlack(false)
-            removeFloor()
-
-            hum.AutoRotate = true
-
-            if runBack and U.savedCF then
-                hum.WalkSpeed = U.originalWalkSpeed * 1.8
-
-                U.returnConn = RunService.RenderStepped:Connect(function(dt)
-                    local dir = (U.savedCF.Position - root.Position)
-                    local dist = dir.Magnitude
-
-                    if dist < 2 then
-                        U.returnConn:Disconnect()
-                        hum.WalkSpeed = U.originalWalkSpeed
-                        root.CFrame = U.savedCF
-                        return
-                    end
-
-                    root.CFrame = root.CFrame + dir.Unit * hum.WalkSpeed * dt
-                    root.CFrame = CFrame.new(root.Position, root.Position + dir)
-                end)
-            else
-                hum.WalkSpeed = U.originalWalkSpeed
-                if U.savedCF then
-                    root.CFrame = U.savedCF
-                end
-            end
-        end
-
-        -- =====================
-        -- STATE OFF
-        -- =====================
-        if not state then
-            resetAll(true)
-            return
-        end
-
-        if U.running then return end
-        U.running = true
-
-        -- =====================
-        -- STATE ON
-        -- =====================
-
-        -- salva posição + WalkSpeed real do jogo
-        U.savedCF = root.CFrame
-        U.originalWalkSpeed = hum.WalkSpeed
-
-        -- agacha
-        manualCrouch(true)
-        task.wait(0.4)
-        if not U.running then resetAll() return end
-
-        local dashTime = 1.3
-        local dashSpeed = 180
-        local t = 0
-
-        createBlackFloor()
-
-        U.moveConn = RunService.RenderStepped:Connect(function(dt)
-            t += dt
-
-            -- dash inicial
-            root.CFrame = root.CFrame + cam.CFrame.LookVector * dashSpeed * dt
-
-            hideWorld(true)
-            setSkyBlack(true)
-
-            if t >= dashTime then
-                U.moveConn:Disconnect()
-
-                -- TELEPORTE MUITO LONGE (universo paralelo)
-                local FAR = 50000
-                root.CFrame = root.CFrame + cam.CFrame.LookVector * FAR
-
-                manualCrouch(false)
-                stopCamera()
-            end
-        end)
-
-        -- câmera girando durante dash
-        local ang = 0
-        U.camConn = RunService.RenderStepped:Connect(function(dt)
-            ang += dt * 1.8
-            local offset = Vector3.new(math.cos(ang)*9, 4, math.sin(ang)*9)
-            cam.CFrame = CFrame.new(root.Position + offset, root.Position)
-        end)
-
-    end
-},
 			    -- Botão teste
     AudioLogger = {
         Nome = "Audio Viewer",
@@ -2380,6 +2187,26 @@ end
 local speedValue = nil
 local allEspEnabled = false
 local minimizeKey = "R"
+
+local function applySpeedLoop()
+    -- Desconecta loop antigo se existir
+    if speedConnection then
+        speedConnection:Disconnect()
+        speedConnection = nil
+    end
+
+    if not speedValue then return end
+
+    speedConnection = RunService.Heartbeat:Connect(function()
+        if player.Character then
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.WalkSpeed ~= speedValue then
+                hum.WalkSpeed = speedValue
+            end
+        end
+    end)
+end
+
 
 local espEnabledSingle = false
 local spectateEnabled = false
